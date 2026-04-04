@@ -515,8 +515,137 @@ const saveDB=db=>localStorage.setItem(LS_DB,JSON.stringify(db));
 const getAdminPw=()=>localStorage.getItem(ADMIN_PW_KEY)||DEFAULT_ADMIN_PW;
 
 function initDB(){
-  const db={topics:[],videos:[],matches:[],participants:{},nextTopicId:1,nextVideoId:1};
-  saveDB(db);return db;
+  const db = {
+    "topics": [
+      {
+        "id": "t1",
+        "category": "Physics",
+        "title_en": "Force and Translational Dynamics topic: Circular Motion",
+        "title_zh": "圓周運動",
+        "learning_objective": "Describe circular orbits using Kepler’s third law. essential knowledge: For an object in circular orbit around a central body, the centripetal acceleration is provided solely by gravitational attraction. The period of the orbit is related to the radius and the mass of the central body (Kepler’s third law).",
+        "persona": "Education Level: Junior high school | Learning Pace: Slow | Preferred Explanation Style: Derivation | Timeline Urgency: Normal | Depth Preference: Application-first",
+        "metadata": ""
+      }
+    ],
+    "videos": [
+      {
+        "id": "v1",
+        "topicId": "t1",
+        "title": "Team 67 Team-67-005",
+        "url": "https://teaching.monster/static/materials/c2_t16_m74.mp4",
+        "type": "direct",
+        "durationSec": 205,
+        "elo": 1185,
+        "wins": 0,
+        "losses": 1
+      },
+      {
+        "id": "v2",
+        "topicId": "t1",
+        "title": "黑柴先生 (BlackShiba Labs) BlackShiba",
+        "url": "https://teaching.monster/static/materials/c2_t16_m61.mp4",
+        "type": "direct",
+        "durationSec": 363,
+        "elo": 1216,
+        "wins": 1,
+        "losses": 0
+      },
+      {
+        "id": "v3",
+        "topicId": "t1",
+        "title": "宇你童行 tsunumon",
+        "url": "https://teaching.monster/static/materials/c2_t16_m32.mp4",
+        "type": "direct",
+        "durationSec": 983,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      },
+      {
+        "id": "v4",
+        "topicId": "t1",
+        "title": "Kuro Kuro-Teach",
+        "url": "https://teaching.monster/static/materials/c2_t16_m56.mp4",
+        "type": "direct",
+        "durationSec": 1069,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      },
+      {
+        "id": "v5",
+        "topicId": "t1",
+        "title": "Team 67 史密提威威傑格曼傑森",
+        "url": "https://teaching.monster/static/materials/c2_t16_m58.mp4",
+        "type": "direct",
+        "durationSec": 305,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      },
+      {
+        "id": "v6",
+        "topicId": "t1",
+        "title": "Team 26 初號機",
+        "url": "https://teaching.monster/static/materials/c2_t16_m54.mp4",
+        "type": "direct",
+        "durationSec": 293,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      },
+      {
+        "id": "v7",
+        "topicId": "t1",
+        "title": "Xiao Xi 小汐 Teaching Monster v3",
+        "url": "https://teaching.monster/static/materials/c2_t16_m75.mp4",
+        "type": "direct",
+        "durationSec": 67,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      },
+      {
+        "id": "v8",
+        "topicId": "t1",
+        "title": "小金 XiaoJin-v22-LaTeX",
+        "url": "https://teaching.monster/static/materials/c2_t16_m21.mp4",
+        "type": "direct",
+        "durationSec": 382,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      },
+      {
+        "id": "v9",
+        "topicId": "t1",
+        "title": "Team 216 storylens",
+        "url": "https://teaching.monster/static/materials/c2_t16_m50.mp4",
+        "type": "direct",
+        "durationSec": 486,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      },
+      {
+        "id": "v10",
+        "topicId": "t1",
+        "title": "[熱身賽第一輪] 二維向量與運動 Team 24 team24",
+        "url": "https://teaching.monster/static/materials/c2_t18_m84.mp4",
+        "type": "direct",
+        "durationSec": 280,
+        "elo": 1200,
+        "wins": 0,
+        "losses": 0
+      }
+    ],
+    "matches": [],
+    "participants": {},
+    "nextTopicId": 2,
+    "nextVideoId": 11
+  };
+  saveDB(db);
+  return db;
 }
 
 // ─── Sheets ──────────────────────────────────
