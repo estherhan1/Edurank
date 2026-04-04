@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduRank — Teaching Video ELO Evaluation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0d0e12;--paper:#f5f2eb;--paper2:#ece8df;--paper3:#e2ddd3;--rule:#ccc8be;--rule2:#b8b4aa;--cobalt:#1a3a6b;--cobalt-light:#2c5faa;--cobalt-dim:rgba(26,58,107,0.08);--crimson:#c0392b;--crimson-dim:rgba(192,57,43,0.1);--gold:#b07d2e;--green:#2d6a4f;--green-dim:rgba(45,106,79,0.1);--text:#1a1a1e;--text-mid:#4a4a52;--text-muted:#8a8a95;--shadow:0 2px 8px rgba(13,14,18,0.08);--shadow-md:0 8px 24px rgba(13,14,18,0.1);--shadow-lg:0 24px 64px rgba(13,14,18,0.14);--radius:10px;--t:0.18s cubic-bezier(0.4,0,0.2,1);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Geist',sans-serif;background:var(--paper);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(13,14,18,0.025) 28px);opacity:.6;}
+.screen{display:none;min-height:100vh;position:relative;z-index:1;}.screen.active{display:flex;flex-direction:column;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:13px 40px;border-bottom:1.5px solid var(--rule);background:rgba(245,242,235,.93);backdrop-filter:blur(12px);position:sticky;top:0;z-index:200;}
+.logo{font-family:'Instrument Serif',serif;font-size:1.3rem;color:var(--cobalt);display:flex;align-items:baseline;gap:7px;}
+.logo-sub{font-size:.7rem;font-family:'Geist Mono',monospace;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;}
+.pills{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.pill{font-family:'Geist Mono',monospace;font-size:.7rem;background:var(--paper2);border:1px solid var(--rule);border-radius:4px;padding:3px 9px;color:var(--text-muted);}
+.pill.blue{background:var(--cobalt-dim);border-color:rgba(26,58,107,.2);color:var(--cobalt-light);}
+.pill.green{background:var(--green-dim);border-color:rgba(45,106,79,.2);color:var(--green);}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:7px;border:none;cursor:pointer;font-family:'Geist',sans-serif;font-weight:500;font-size:.84rem;transition:var(--t);text-decoration:none;}
+.btn-primary{background:var(--cobalt);color:#fff;}.btn-primary:hover{background:var(--cobalt-light);box-shadow:0 4px 16px rgba(26,58,107,.25);transform:translateY(-1px);}
+.btn-secondary{background:var(--paper2);border:1px solid var(--rule);color:var(--text-mid);}.btn-secondary:hover{background:var(--paper3);border-color:var(--rule2);}
+.btn-ghost{background:transparent;border:1px solid var(--rule);color:var(--text-muted);}.btn-ghost:hover{background:var(--paper2);color:var(--text);}
+.btn-danger{background:var(--crimson-dim);border:1px solid rgba(192,57,43,.2);color:var(--crimson);}.btn-danger:hover{background:rgba(192,57,43,.18);}
+.btn-lg{padding:12px 28px;font-size:.95rem;border-radius:9px;}.btn-sm{padding:5px 12px;font-size:.77rem;}
+.btn:disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}
+.flabel{display:block;font-size:.7rem;color:var(--text-muted);margin-bottom:5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;font-family:'Geist Mono',monospace;}
+.finput,.fselect{width:100%;background:#fff;border:1.5px solid var(--rule);border-radius:7px;padding:9px 12px;color:var(--text);font-family:'Geist',sans-serif;font-size:.87rem;transition:var(--t);outline:none;}
+.finput:focus,.fselect:focus{border-color:var(--cobalt-light);box-shadow:0 0 0 3px rgba(26,58,107,.08);}.finput::placeholder{color:var(--text-muted);}
+textarea.finput{resize:vertical;min-height:60px;font-size:.82rem;line-height:1.5;}
+.status{display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:.69rem;border-radius:4px;padding:2px 8px;}
+.status.ok{background:var(--green-dim);border:1px solid rgba(45,106,79,.2);color:var(--green);}
+.status.err{background:var(--crimson-dim);border:1px solid rgba(192,57,43,.2);color:var(--crimson);}
+.status.idle{background:var(--paper2);border:1px solid var(--rule);color:var(--text-muted);}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.err-msg{color:var(--crimson);font-size:.77rem;margin-top:6px;display:none;font-family:'Geist Mono',monospace;}
+.cfg-note{background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);border-radius:7px;padding:12px 14px;font-size:.77rem;color:var(--text-mid);line-height:1.65;margin-top:14px;}
+.cfg-note code{background:rgba(26,58,107,.1);border-radius:3px;padding:1px 5px;font-family:'Geist Mono',monospace;font-size:.74rem;}
+.ccard{background:#fff;border:1.5px solid var(--rule);border-radius:16px;padding:44px 40px;width:100%;box-shadow:var(--shadow-lg);}
+.eyebrow{font-family:'Geist Mono',monospace;font-size:.69rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cobalt-light);margin-bottom:10px;}
+.section-title{font-family:'Instrument Serif',serif;font-size:1.6rem;color:var(--cobalt);margin-bottom:6px;}
+
+/* Login */
+.login-eyebrow{display:inline-flex;align-items:center;gap:6px;font-family:'Geist Mono',monospace;font-size:.69rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cobalt-light);background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);border-radius:4px;padding:4px 10px;margin-bottom:20px;}
+.confirm-id-box{font-family:'Geist Mono',monospace;font-size:1.3rem;background:var(--cobalt-dim);border:2px solid rgba(26,58,107,.2);border-radius:10px;padding:16px 20px;margin:20px 0;color:var(--cobalt);letter-spacing:.04em;word-break:break-all;text-align:center;}
+
+/* Duration */
+.dur-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0;}
+.dur-card{background:#fff;border:2px solid var(--rule);border-radius:12px;padding:18px 14px;text-align:center;cursor:pointer;transition:var(--t);}
+.dur-card:hover{border-color:var(--cobalt-light);background:var(--cobalt-dim);}
+.dur-card.sel{border-color:var(--cobalt);background:var(--cobalt-dim);box-shadow:0 0 0 3px rgba(26,58,107,.1);}
+.dur-num{font-family:'Instrument Serif',serif;font-size:1.8rem;color:var(--cobalt);line-height:1;}
+.dur-unit{font-size:.72rem;color:var(--text-muted);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
+.dur-pairs{font-size:.74rem;color:var(--text-mid);margin-top:6px;}
+
+/* Rubric */
+.rubric-check{display:flex;align-items:center;gap:10px;margin-top:20px;padding:14px 16px;background:var(--paper2);border-radius:8px;border:1px solid var(--rule);cursor:pointer;user-select:none;}
+.rubric-check input{width:18px;height:18px;accent-color:var(--cobalt);}
+.rubric-check label{font-size:.84rem;color:var(--text-mid);cursor:pointer;}
+.rubric-timer-note{font-family:'Geist Mono',monospace;font-size:.69rem;color:var(--text-muted);margin-top:10px;text-align:center;}
+.rubric-dims{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.rdim{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;}
+.rdim-n{font-family:'Geist Mono',monospace;font-size:.64rem;color:var(--text-muted);margin-bottom:3px;}
+.rdim-title{font-size:.81rem;font-weight:600;color:var(--cobalt);margin-bottom:4px;}
+.rdim-desc{font-size:.74rem;color:var(--text-mid);line-height:1.55;margin-bottom:6px;}
+.rdim-pts{display:flex;flex-direction:column;gap:4px;}
+.rdim-pt{font-size:.71rem;color:var(--text-muted);line-height:1.45;padding-left:10px;position:relative;}
+.rdim-pt::before{content:'·';position:absolute;left:0;color:var(--cobalt-light);}
+.rubric{margin:14px 40px 0;background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;}
+.rubric-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--paper2);border-bottom:1px solid var(--rule);cursor:pointer;user-select:none;}
+.rubric-hdr-l{display:flex;align-items:center;gap:8px;}
+.rtag{font-family:'Geist Mono',monospace;font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;border-radius:4px;padding:2px 7px;}
+.rtag.ai{color:var(--cobalt-light);background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);}
+.rtag.hu{color:var(--crimson);background:var(--crimson-dim);border:1px solid rgba(192,57,43,.15);}
+.rubric-htitle{font-size:.81rem;font-weight:600;color:var(--text-mid);}
+.rubric-toggle{font-size:.72rem;color:var(--text-muted);font-family:'Geist Mono',monospace;}
+.rubric-body{max-height:0;overflow:hidden;transition:max-height .35s ease;}.rubric-body.open{max-height:1200px;}
+.rubric-inner{padding:16px;}
+
+/* Topic context card on compare screen */
+.topic-ctx{margin:10px 40px 0;background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);padding:14px 18px;}
+.topic-ctx-title{font-weight:600;font-size:.88rem;color:var(--cobalt);margin-bottom:4px;}
+.topic-ctx-meta{font-size:.74rem;color:var(--text-muted);line-height:1.55;}
+.topic-ctx-meta strong{color:var(--text-mid);}
+.topic-ctx-persona{margin-top:8px;padding:10px 12px;background:var(--paper);border:1px solid var(--rule);border-radius:6px;font-size:.72rem;color:var(--text-mid);line-height:1.55;max-height:80px;overflow-y:auto;}
+
+/* Compare */
+.compare-top{padding:20px 40px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid var(--rule);}
+.compare-heading{font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--cobalt);margin-bottom:3px;}
+.compare-sub{font-size:.82rem;color:var(--text-muted);}
+.prog-wrap{padding:10px 40px 0;}.prog-track{height:3px;background:var(--paper3);border-radius:2px;overflow:hidden;margin-bottom:5px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--cobalt-light),var(--cobalt));transition:width .5s ease;border-radius:2px;}
+.prog-meta{display:flex;justify-content:space-between;}.prog-label{font-family:'Geist Mono',monospace;font-size:.69rem;color:var(--text-muted);}
+.timer-bar{padding:6px 40px 0;display:flex;align-items:center;gap:10px;}
+.timer-display{font-family:'Geist Mono',monospace;font-size:.77rem;color:var(--text-mid);background:var(--paper2);border:1px solid var(--rule);border-radius:5px;padding:3px 10px;}
+.timer-display.warn{color:var(--crimson);background:var(--crimson-dim);border-color:rgba(192,57,43,.2);}
+.dwell-display{font-family:'Geist Mono',monospace;font-size:.67rem;color:var(--text-muted);margin-left:auto;}
+.mode-strip{display:flex;padding:12px 40px 0;gap:0;}
+.mode-tab{padding:7px 18px;font-size:.79rem;font-weight:500;cursor:pointer;border:1px solid var(--rule);background:var(--paper2);color:var(--text-muted);transition:var(--t);}
+.mode-tab:first-child{border-radius:6px 0 0 6px;}.mode-tab:last-child{border-radius:0 6px 6px 0;border-left:none;}
+.mode-tab.active{background:var(--cobalt);color:#fff;border-color:var(--cobalt);}.mode-tab:not(.active):hover{background:var(--paper3);color:var(--text);}
+.arena{display:grid;grid-template-columns:1fr 52px 1fr;flex:1;padding:18px 40px;align-items:start;gap:14px;}
+.vcard{background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:var(--t);position:relative;}
+.vcard:hover{border-color:var(--cobalt-light);box-shadow:var(--shadow-md);}
+.vcard.sel{border-color:var(--cobalt);border-width:2px;box-shadow:0 0 0 3px rgba(26,58,107,.1),var(--shadow-md);}.vcard.rej{opacity:.4;filter:grayscale(.3);}
+.sel-badge{position:absolute;top:9px;right:9px;z-index:10;background:var(--cobalt);color:#fff;border-radius:4px;padding:3px 8px;font-size:.68rem;font-weight:600;font-family:'Geist Mono',monospace;opacity:0;transition:var(--t);}.vcard.sel .sel-badge{opacity:1;}
+.vembed{width:100%;aspect-ratio:16/9;background:var(--ink);overflow:hidden;position:relative;}
+.vembed iframe,.vembed video{width:100%;height:100%;border:none;display:block;}
+.vplaceholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--text-muted);font-size:.79rem;background:var(--paper2);}
+.vinfo{padding:11px 14px;display:flex;align-items:center;gap:9px;}
+.vside{font-family:'Geist Mono',monospace;font-size:.67rem;text-transform:uppercase;letter-spacing:.07em;background:var(--paper2);border:1px solid var(--rule);border-radius:4px;padding:2px 7px;color:var(--text-muted);flex-shrink:0;}
+.vtitle{font-size:.81rem;color:var(--text-mid);font-weight:500;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vs-col{display:flex;align-items:flex-start;justify-content:center;padding-top:52px;}
+.vs-badge{width:38px;height:38px;border-radius:50%;background:var(--paper2);border:1.5px solid var(--rule);display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:.82rem;color:var(--text-muted);}
+.choice-strip{padding:14px 40px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:center;gap:12px;}
+.cbtn{flex:1;max-width:250px;padding:12px 14px;border-radius:9px;border:1.5px solid var(--rule);background:#fff;cursor:pointer;text-align:center;transition:var(--t);font-family:'Geist',sans-serif;}
+.cbtn:hover{border-color:var(--cobalt-light);background:var(--cobalt-dim);}.cbtn.active{border-color:var(--cobalt);border-width:2px;background:var(--cobalt-dim);}
+.cbtn-ey{font-size:.67rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;font-family:'Geist Mono',monospace;margin-bottom:3px;}
+.cbtn-lbl{font-weight:600;font-size:.88rem;color:var(--text);}
+.submit-strip{padding:0 40px 26px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;}
+
+/* Results */
+.results-hdr{padding:44px 40px 24px;}.results-ey{font-family:'Geist Mono',monospace;font-size:.69rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:8px;}
+.results-title{font-family:'Instrument Serif',serif;font-size:2.2rem;color:var(--cobalt);margin-bottom:4px;}.results-sub{color:var(--text-muted);font-size:.87rem;}
+.lb{max-width:760px;padding:0 40px 48px;display:flex;flex-direction:column;gap:8px;}
+.lbrow{background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);padding:13px 18px;display:flex;align-items:center;gap:14px;transition:var(--t);}.lbrow:hover{box-shadow:var(--shadow);transform:translateX(2px);}
+.lbrow.r1{border-color:rgba(176,125,46,.5);background:rgba(176,125,46,.03);}.lbrow.r2{border-color:rgba(150,150,165,.4);}.lbrow.r3{border-color:rgba(156,102,68,.3);}
+.lb-medal{font-size:1.25rem;min-width:30px;text-align:center;}.lb-num{font-family:'Instrument Serif',serif;font-size:1.2rem;color:var(--text-muted);min-width:26px;text-align:center;}
+.lb-info{flex:1;min-width:0;}.lb-title{font-weight:600;font-size:.88rem;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-detail{font-family:'Geist Mono',monospace;font-size:.69rem;color:var(--text-muted);}
+.lb-elo-wrap{text-align:right;}.lb-elo{font-family:'Geist Mono',monospace;font-size:1rem;font-weight:500;color:var(--cobalt);}.lb-elo-lbl{font-size:.67rem;color:var(--text-muted);font-family:'Geist Mono',monospace;}
+.results-acts{display:flex;gap:10px;padding:0 40px 32px;}
+
+/* Admin */
+.admin-layout{display:grid;grid-template-columns:210px 1fr;flex:1;}
+.admin-sb{background:var(--paper2);border-right:1.5px solid var(--rule);padding:18px 10px;overflow-y:auto;}
+.sb-glabel{font-size:.64rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);padding:0 8px;margin:14px 0 5px;font-family:'Geist Mono',monospace;}
+.sbitem{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;transition:var(--t);font-size:.83rem;color:var(--text-mid);margin-bottom:1px;}
+.sbitem:hover{background:var(--paper3);color:var(--text);}.sbitem.active{background:var(--cobalt);color:#fff;}
+.sbitem.danger{color:var(--crimson);}.sbitem.danger:hover{background:var(--crimson-dim);}
+.admin-main{padding:28px 34px;overflow-y:auto;}
+.atab{display:none;}.atab.active{display:block;}
+.atab-title{font-family:'Instrument Serif',serif;font-size:1.55rem;color:var(--cobalt);margin-bottom:22px;}
+.card{background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);padding:18px 22px;margin-bottom:14px;}
+.card-title{font-weight:600;font-size:.88rem;margin-bottom:3px;}.card-sub{font-size:.77rem;color:var(--text-muted);}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px;}
+.scard{background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);padding:16px;}
+.sval{font-family:'Instrument Serif',serif;font-size:1.9rem;color:var(--cobalt);line-height:1;margin-bottom:4px;}
+.slabel{font-size:.69rem;color:var(--text-muted);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.04em;}
+.vrow{background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);padding:11px 15px;display:flex;align-items:center;gap:13px;margin-bottom:7px;flex-wrap:wrap;}
+.vthumb{width:70px;height:40px;border-radius:5px;background:var(--paper2);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--text-muted);}.vthumb img{width:100%;height:100%;object-fit:cover;}
+.vrow-info{flex:1;min-width:0;}.vrow-title{font-weight:600;font-size:.83rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vrow-url{font-family:'Geist Mono',monospace;font-size:.67rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;}
+.elo-chip{font-family:'Geist Mono',monospace;font-size:.79rem;color:var(--cobalt-light);background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);border-radius:5px;padding:3px 9px;flex-shrink:0;}
+.mrow{background:#fff;border:1px solid var(--rule);border-radius:7px;padding:8px 13px;display:flex;align-items:center;gap:9px;margin-bottom:5px;font-size:.77rem;flex-wrap:wrap;}
+.mrow .winner{color:var(--green);font-weight:600;}.mrow .loser{color:var(--text-muted);}
+.mrow .mts{font-family:'Geist Mono',monospace;font-size:.67rem;color:var(--text-muted);margin-left:auto;flex-shrink:0;}
+.mtag{font-family:'Geist Mono',monospace;font-size:.63rem;border-radius:3px;padding:1px 5px;flex-shrink:0;}.mtag.ai{background:var(--cobalt-dim);color:var(--cobalt-light);}.mtag.hu{background:var(--crimson-dim);color:var(--crimson);}
+.cfg-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;}
+.export-card{background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);padding:18px 22px;margin-bottom:11px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.dwell-table{width:100%;border-collapse:collapse;font-size:.77rem;margin-top:10px;}
+.dwell-table th{text-align:left;font-family:'Geist Mono',monospace;font-size:.67rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);padding:6px 8px;border-bottom:1.5px solid var(--rule);}
+.dwell-table td{padding:6px 8px;border-bottom:1px solid var(--rule);color:var(--text-mid);}.dwell-table tr:hover td{background:var(--paper2);}
+.dwell-warn{color:var(--crimson);font-weight:600;}
+
+/* Topic card in admin */
+.tcard{background:#fff;border:1.5px solid var(--rule);border-radius:var(--radius);padding:16px 20px;margin-bottom:10px;}
+.tcard-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.tcard-cat{font-family:'Geist Mono',monospace;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--cobalt-light);background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);border-radius:4px;padding:2px 7px;}
+.tcard-title{font-weight:600;font-size:.9rem;color:var(--cobalt);}
+.tcard-desc{font-size:.76rem;color:var(--text-mid);line-height:1.5;margin-bottom:6px;}
+.tcard-videos{border-top:1px solid var(--rule);padding-top:8px;}
+
+/* Import area */
+.import-area{border:2px dashed var(--rule);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:var(--t);margin-bottom:14px;}
+.import-area:hover{border-color:var(--cobalt-light);background:var(--cobalt-dim);}
+.import-area input[type=file]{display:none;}
+
+.toast{position:fixed;bottom:22px;right:22px;z-index:9999;background:var(--ink);color:#f5f2eb;border-radius:8px;padding:10px 15px;font-size:.81rem;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg);transform:translateY(12px);opacity:0;transition:all .25s ease;pointer-events:none;max-width:350px;}.toast.show{transform:translateY(0);opacity:1;pointer-events:auto;}
+.overlay{position:fixed;inset:0;z-index:999;background:rgba(13,14,18,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;}.overlay.show{display:flex;}
+.modal{background:#fff;border:1.5px solid var(--rule);border-radius:14px;padding:32px;max-width:400px;width:calc(100% - 40px);box-shadow:var(--shadow-lg);text-align:center;}
+.modal-title{font-family:'Instrument Serif',serif;font-size:1.4rem;margin-bottom:8px;color:var(--cobalt);}.modal-desc{color:var(--text-muted);font-size:.84rem;margin-bottom:22px;line-height:1.6;}.modal-acts{display:flex;gap:10px;justify-content:center;}
+.empty{text-align:center;padding:44px 20px;color:var(--text-muted);}.empty-ico{font-size:2rem;opacity:.32;margin-bottom:9px;}.empty-txt{font-size:.84rem;}
+
+@media(max-width:860px){
+  .arena{grid-template-columns:1fr;}.vs-col{padding:4px;align-items:center;}.stats-grid{grid-template-columns:1fr 1fr;}
+  .admin-layout{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  .admin-sb{display:flex!important;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:10px 12px;border-right:none;border-bottom:1.5px solid var(--rule);gap:6px;white-space:nowrap;}
+  .admin-sb .sb-glabel{display:none;}
+  .admin-sb .sbitem{flex-shrink:0;border-radius:6px;border:1px solid var(--rule);background:var(--paper3);padding:6px 12px;font-size:.77rem;}
+  .admin-sb .sbitem.active{background:var(--cobalt);color:#fff;border-color:var(--cobalt);}
+  .admin-sb .sbitem.danger{border-color:rgba(192,57,43,.2);}
+  .admin-main{padding:16px;}
+  .rubric-dims{grid-template-columns:1fr;}
+  .compare-top{flex-direction:column;gap:10px;}
+  nav,.arena,.choice-strip,.submit-strip,.prog-wrap,.mode-strip,.rubric,.timer-bar,.topic-ctx{padding-left:16px!important;padding-right:16px!important;margin-left:0!important;margin-right:0!important;}
+  .compare-top{padding:16px;}.lb,.results-hdr,.results-acts{padding-left:16px;padding-right:16px;}
+  .dur-grid{grid-template-columns:1fr 1fr;}.complete-stats{grid-template-columns:1fr;}
+  .cfg-row{grid-template-columns:1fr;}.export-card{flex-direction:column;gap:10px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ CONFIG ═══ -->
+<div id="screen-config" class="screen active" style="align-items:center;justify-content:center;padding:40px 20px;">
+  <div class="ccard" style="max-width:520px;">
+    <div class="eyebrow">⚙ Initial Setup</div>
+    <h1 class="section-title">Connect Google Sheets</h1>
+    <p style="color:var(--text-muted);font-size:.87rem;line-height:1.65;margin-bottom:28px;">Paste your Apps Script Web App URL, or skip to use local storage.</p>
+    <div style="margin-bottom:12px;"><label class="flabel">Apps Script Web App URL</label><input class="finput" id="setup-url" type="url" placeholder="https://script.google.com/macros/s/…/exec"></div>
+    <div style="margin-bottom:12px;"><label class="flabel">Sheet Name</label><input class="finput" id="setup-sheet" placeholder="Sheet1"></div>
+    <div style="display:flex;gap:9px;margin-top:18px;"><button class="btn btn-primary btn-lg" style="flex:1;justify-content:center;" onclick="saveSheetConfig()">Connect & Continue →</button></div>
+    <div style="text-align:center;margin-top:11px;"><button class="btn btn-ghost btn-sm" onclick="useLocalStorage()">Skip — use local storage</button></div>
+  </div>
+</div>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="screen-login" class="screen" style="align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(26,58,107,.06) 0%,transparent 65%);">
+  <div class="ccard" style="max-width:440px;padding:48px 44px;">
+    <div class="login-eyebrow"><span>◉</span> Prolific Research Platform</div>
+    <h1 style="font-family:'Instrument Serif',serif;font-size:2rem;margin-bottom:6px;line-height:1.15;color:var(--cobalt);">Teaching Video<br>Quality Evaluation</h1>
+    <p style="color:var(--text-muted);font-size:.87rem;line-height:1.65;margin-bottom:28px;">Compare pairs of instructional videos on the same topic and select the one that better satisfies our pedagogical rubric.</p>
+    <div style="margin-bottom:14px;"><label class="flabel">Prolific Participant ID</label><input class="finput" id="prolific-input" type="text" placeholder="e.g. 64a3f8c9e2b1d0001234abcd" maxlength="36" autocomplete="off"><div class="err-msg" id="login-err">Please enter a valid ID (min 6 characters).</div></div>
+    <button class="btn btn-primary btn-lg" style="width:100%;justify-content:center;" onclick="doLogin()">Continue →</button>
+    <div style="text-align:center;margin-top:18px;"><button class="btn btn-ghost btn-sm" onclick="goAdminLogin()">Admin Portal</button></div>
+  </div>
+</div>
+
+<!-- ═══ CONFIRM ID ═══ -->
+<div id="screen-confirm" class="screen" style="align-items:center;justify-content:center;padding:40px 20px;">
+  <div class="ccard" style="max-width:480px;text-align:center;">
+    <div class="eyebrow">Step 1 of 3 · Confirm Identity</div>
+    <h2 class="section-title">Is this your Participant ID?</h2>
+    <p style="font-size:.84rem;color:var(--text-muted);">Verify this matches your Prolific account exactly.</p>
+    <div class="confirm-id-box" id="confirm-id-display">—</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-ghost" onclick="showScreen('screen-login')">← No, go back</button>
+      <button class="btn btn-primary btn-lg" onclick="goToDuration()">Yes, correct →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DURATION ═══ -->
+<div id="screen-duration" class="screen" style="align-items:center;justify-content:center;padding:40px 20px;">
+  <div class="ccard" style="max-width:540px;text-align:center;">
+    <div class="eyebrow">Step 2 of 3 · Session Length</div>
+    <h2 class="section-title">How long would you like to evaluate?</h2>
+    <p style="font-size:.84rem;color:var(--text-muted);">You can stop early or continue past the timer.</p>
+    <div class="dur-grid">
+      <div class="dur-card" onclick="selectDuration(15,this)"><div class="dur-num">15</div><div class="dur-unit">minutes</div><div class="dur-pairs">—</div></div>
+      <div class="dur-card sel" onclick="selectDuration(30,this)"><div class="dur-num">30</div><div class="dur-unit">minutes</div><div class="dur-pairs">—</div></div>
+      <div class="dur-card" onclick="selectDuration(60,this)"><div class="dur-num">60</div><div class="dur-unit">minutes</div><div class="dur-pairs">—</div></div>
+    </div>
+    <div id="dur-detail" style="font-size:.74rem;color:var(--text-muted);margin-bottom:14px;font-family:'Geist Mono',monospace;"></div>
+    <button class="btn btn-primary btn-lg" style="width:100%;justify-content:center;" onclick="goToRubricReview()">Continue →</button>
+  </div>
+</div>
+
+<!-- ═══ RUBRIC REVIEW ═══ -->
+<div id="screen-rubric-review" class="screen" style="align-items:center;justify-content:center;padding:40px 20px;">
+  <div class="ccard" style="max-width:720px;">
+    <div class="eyebrow">Step 3 of 3 · Read Evaluation Rubric</div>
+    <h2 class="section-title">Evaluation Criteria</h2>
+    <p style="font-size:.84rem;color:var(--text-muted);margin-bottom:18px;">Please read all four dimensions carefully before starting.</p>
+    <div class="rubric-dims" id="rubric-review-dims"></div>
+    <div class="rubric-check"><input type="checkbox" id="rubric-ack" onchange="checkRubricAck()"><label for="rubric-ack">I have read and understood all four evaluation dimensions</label></div>
+    <div class="rubric-timer-note" id="rubric-timer-note">Please spend at least <strong>15 seconds</strong> reading.</div>
+    <div style="text-align:center;margin-top:16px;"><button class="btn btn-primary btn-lg" id="rubric-start-btn" disabled onclick="startEvaluation()">Begin Evaluation →</button></div>
+  </div>
+</div>
+
+<!-- ═══ WARM-UP TUTORIAL ═══ -->
+<div id="screen-warmup" class="screen" style="align-items:center;justify-content:center;padding:40px 20px;">
+  <div class="ccard" style="max-width:620px;">
+    <div class="eyebrow">Practice Round · No Timer</div>
+    <h2 class="section-title">How the Evaluation Works</h2>
+    <p style="font-size:.84rem;color:var(--text-muted);margin-bottom:20px;">Before starting the timed session, let's walk through how the interface works.</p>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">1</div>
+        <div><div style="font-weight:600;font-size:.86rem;margin-bottom:2px;">Watch both videos completely</div><div style="font-size:.78rem;color:var(--text-muted);line-height:1.55;">Two videos on the same topic will appear side by side. You must watch both in full — the submit button will remain locked until the combined video time has elapsed. <strong>Do not speed up the videos.</strong></div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">2</div>
+        <div><div style="font-weight:600;font-size:.86rem;margin-bottom:2px;">Read the topic context</div><div style="font-size:.78rem;color:var(--text-muted);line-height:1.55;">Above the videos you'll see the topic, learning objective, and student persona. Use this to understand who the video is made for.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">3</div>
+        <div><div style="font-weight:600;font-size:.86rem;margin-bottom:2px;">Select the better video</div><div style="font-size:.78rem;color:var(--text-muted);line-height:1.55;">Click on a video card or the choice button below to pick the winner. Base your decision on the 4 rubric dimensions you just reviewed.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--cobalt-dim);border:1px solid rgba(26,58,107,.15);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">4</div>
+        <div><div style="font-weight:600;font-size:.86rem;margin-bottom:2px;">Confirm and continue</div><div style="font-size:.78rem;color:var(--text-muted);line-height:1.55;">Click "Confirm & Next" to submit your choice and load the next pair. You can also skip a pair if you're unsure. The rubric is always available on the evaluation screen.</div></div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" style="width:100%;justify-content:center;" onclick="startTimedSession()">I understand — Start Timed Session →</button>
+  </div>
+</div>
+
+<!-- ═══ COMPARE ═══ -->
+<div id="screen-compare" class="screen">
+  <nav>
+    <div class="logo">EduRank <span class="logo-sub">· Evaluation</span></div>
+    <div class="pills">
+      <span class="pill" id="nav-uid">—</span>
+      <span class="pill blue" id="nav-count">0 / 0</span>
+      <span class="status idle" id="nav-connect"><span class="dot"></span> local</span>
+      <button class="btn btn-secondary btn-sm" onclick="showResults()">Leaderboard</button>
+    </div>
+  </nav>
+  <div class="compare-top">
+    <div><h2 class="compare-heading">Which video teaches better?</h2><p class="compare-sub">Watch both videos fully, then select the better one.</p></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;padding-top:4px;">
+      <span class="pill blue" id="round-label">Round 1</span>
+      <span class="pill green" id="completion-badge" style="display:none;">✓ Complete</span>
+    </div>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="prog-meta"><span class="prog-label" id="prog-label">0 comparisons</span><span class="prog-label" id="prog-goal">—</span></div>
+  </div>
+  <div class="timer-bar">
+    <span style="font-size:.72rem;color:var(--text-muted);font-family:'Geist Mono',monospace;">SESSION</span>
+    <span class="timer-display" id="session-timer">--:--</span>
+    <span class="dwell-display" id="dwell-live">⏱ 0s</span>
+  </div>
+  <!-- Topic context -->
+  <div class="topic-ctx" id="topic-ctx" style="display:none;">
+    <div class="topic-ctx-title" id="topic-ctx-title"></div>
+    <div class="topic-ctx-meta" id="topic-ctx-meta"></div>
+    <div class="topic-ctx-persona" id="topic-ctx-persona" style="display:none;"></div>
+  </div>
+  <div class="rubric" style="margin:13px 40px 0;">
+    <div class="rubric-hdr" onclick="toggleRubric()">
+      <div class="rubric-hdr-l"><span class="rubric-htitle">Evaluation Rubric — click to expand</span></div>
+      <span class="rubric-toggle" id="rtoggle">▼ Show</span>
+    </div>
+    <div class="rubric-body" id="rbody"><div class="rubric-inner"><div class="rubric-dims" id="rubric-compare-dims"></div></div></div>
+  </div>
+  <div class="arena">
+    <div class="vcard" id="card-a" onclick="selectSide('a')"><div class="sel-badge">✓ SELECTED</div><div class="vembed" id="embed-a"><div class="vplaceholder"><div class="vplaceholder-ico">▶</div><span>Loading…</span></div></div><div class="vinfo"><span class="vside">Video A</span><span class="vtitle" id="title-a">—</span></div></div>
+    <div class="vs-col"><div class="vs-badge">vs</div></div>
+    <div class="vcard" id="card-b" onclick="selectSide('b')"><div class="sel-badge">✓ SELECTED</div><div class="vembed" id="embed-b"><div class="vplaceholder"><div class="vplaceholder-ico">▶</div><span>Loading…</span></div></div><div class="vinfo"><span class="vside">Video B</span><span class="vtitle" id="title-b">—</span></div></div>
+  </div>
+  <div class="choice-strip">
+    <div class="cbtn" id="choice-a" onclick="selectSide('a')"><div class="cbtn-ey">Choose winner</div><div class="cbtn-lbl">👈 Video A</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="skipPair()" style="flex-shrink:0;">Skip</button>
+    <div class="cbtn" id="choice-b" onclick="selectSide('b')"><div class="cbtn-ey">Choose winner</div><div class="cbtn-lbl">Video B 👉</div></div>
+  </div>
+  <div class="submit-strip"><button class="btn btn-primary btn-lg" id="submit-btn" onclick="submitChoice()" disabled>Confirm & Next →</button></div>
+</div>
+
+<!-- ═══ SESSION COMPLETE ═══ -->
+<div id="screen-complete" class="screen" style="align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(ellipse 60% 40% at 50% -5%,rgba(45,106,79,.07) 0%,transparent 55%);">
+  <div class="ccard" style="max-width:500px;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+    <h2 id="complete-title" style="font-family:'Instrument Serif',serif;font-size:2rem;color:var(--green);margin-bottom:8px;">Session Complete!</h2>
+    <p id="complete-msg" style="color:var(--text-muted);font-size:.87rem;margin-bottom:16px;">Thank you for your participation.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0;text-align:center;">
+      <div class="scard"><div class="sval" id="comp-pairs">0</div><div class="slabel">Pairs</div></div>
+      <div class="scard"><div class="sval" id="comp-time">0m</div><div class="slabel">Time</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary btn-lg" style="justify-content:center;" onclick="backToCompare()">Continue (optional)</button>
+      <button class="btn btn-ghost" style="justify-content:center;" onclick="showScreen('screen-login')">Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESULTS ═══ -->
+<div id="screen-results" class="screen" style="background:radial-gradient(ellipse 60% 40% at 50% -5%,rgba(45,106,79,.07) 0%,transparent 55%);">
+  <nav><div class="logo">EduRank <span class="logo-sub">· Leaderboard</span></div><div class="pills"><button class="btn btn-secondary btn-sm" onclick="backToCompare()">← Continue</button></div></nav>
+  <div class="results-hdr"><div class="results-ey">RANKINGS BY TOPIC</div><h2 class="results-title">ELO Leaderboard</h2><p class="results-sub">Rankings grouped by topic. Each topic's videos are ranked independently.</p></div>
+  <div style="padding:0 40px 12px;"><label class="flabel">Filter by Topic</label><select class="fselect" id="lb-topic-filter" onchange="renderLeaderboard()" style="max-width:400px;"><option value="__all__">All Topics</option></select></div>
+  <div class="lb" id="leaderboard"></div>
+  <div class="results-acts"><button class="btn btn-primary" onclick="backToCompare()">Continue</button><button class="btn btn-secondary" onclick="showScreen('screen-login')">Log Out</button></div>
+</div>
+
+<!-- ═══ ADMIN LOGIN ═══ -->
+<div id="screen-admin-login" class="screen" style="align-items:center;justify-content:center;padding:40px 20px;">
+  <div class="ccard" style="max-width:380px;text-align:center;">
+    <div style="font-size:1.6rem;margin-bottom:8px;">🔐</div>
+    <h2 style="font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--cobalt);margin-bottom:6px;">Admin Portal</h2>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:18px;">Enter password to access the dashboard.</p>
+    <div style="margin-bottom:14px;"><input class="finput" id="admin-pw-input" type="password" placeholder="Password" autocomplete="off"><div class="err-msg" id="admin-pw-err">Incorrect password.</div></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doAdminLogin()">Enter →</button>
+    <div style="margin-top:12px;"><button class="btn btn-ghost btn-sm" onclick="showScreen('screen-login')">← Back</button></div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN ═══ -->
+<div id="screen-admin" class="screen">
+  <nav><div class="logo">EduRank <span class="logo-sub" style="color:var(--crimson);">· Admin</span></div><div class="pills"><span class="status idle" id="admin-status-badge"><span class="dot"></span> checking…</span><button class="btn btn-ghost btn-sm" onclick="showScreen('screen-login')">← Exit</button></div></nav>
+  <div class="admin-layout">
+    <div class="admin-sb">
+      <div class="sb-glabel">Dashboard</div>
+      <div class="sbitem active" onclick="aTab('overview',this)">📊 Overview</div>
+      <div class="sbitem" onclick="aTab('topics',this)">📋 Topics & Videos</div>
+      <div class="sbitem" onclick="aTab('import',this)">📥 Import</div>
+      <div class="sbitem" onclick="aTab('settings',this)">⚙ Backend</div>
+      <div class="sb-glabel">Data</div>
+      <div class="sbitem" onclick="aTab('matches',this)">⚡ Match Log</div>
+      <div class="sbitem" onclick="aTab('dwell',this)">⏱ Dwell Times</div>
+      <div class="sbitem" onclick="aTab('export',this)">📤 Export</div>
+      <div class="sb-glabel">Danger Zone</div>
+      <div class="sbitem danger" onclick="resetPrompt()">🗑 Reset All</div>
+    </div>
+    <div class="admin-main">
+      <!-- Overview -->
+      <div id="atab-overview" class="atab active">
+        <div class="atab-title">System Overview</div>
+        <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div><div class="card-title">Google Sheets Connection</div><div class="card-sub" id="overview-sheet-url" style="font-family:'Geist Mono',monospace;font-size:.68rem;word-break:break-all;margin-top:3px;"></div></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="status idle" id="overview-conn-status"><span class="dot"></span> not tested</span><button class="btn btn-primary btn-sm" onclick="quickTestConn()">Test</button></div>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="card"><div class="card-title" style="margin-bottom:8px;">📈 Completion by Topic</div><div id="completion-info"></div></div>
+        <div class="card"><div class="card-title" style="margin-bottom:13px;">Global ELO Rankings</div><div id="admin-lb"></div></div>
+      </div>
+      <!-- Topics & Videos -->
+      <div id="atab-topics" class="atab">
+        <div class="atab-title">Topics & Videos</div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px;">Add New Topic</div>
+          <div style="margin-bottom:8px;"><label class="flabel">Category</label><input class="finput" id="add-topic-cat" placeholder="e.g. Physics"></div>
+          <div class="cfg-row"><div><label class="flabel">Title (EN)</label><input class="finput" id="add-topic-title-en" placeholder="Circular Motion"></div><div><label class="flabel">Title (ZH)</label><input class="finput" id="add-topic-title-zh" placeholder="圓週運動"></div></div>
+          <div style="margin-bottom:8px;"><label class="flabel">Learning Objective</label><input class="finput" id="add-topic-obj" placeholder="Describe circular orbits using Kepler's third law."></div>
+          <div style="margin-bottom:8px;"><label class="flabel">Student Persona (optional)</label><textarea class="finput" id="add-topic-persona" placeholder="Education level, pace, style preferences…" rows="2"></textarea></div>
+          <div style="margin-bottom:8px;"><label class="flabel">Metadata (optional)</label><textarea class="finput" id="add-topic-meta" placeholder="Any extra context…" rows="2"></textarea></div>
+          <button class="btn btn-primary" onclick="addTopic()">Add Topic</button>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px;">Add Video to Topic</div>
+          <div style="margin-bottom:8px;"><label class="flabel">Topic</label><select class="fselect" id="add-vid-topic"></select></div>
+          <div class="cfg-row">
+            <div><label class="flabel">Video Title</label><input class="finput" id="add-vid-title" placeholder="Video title"></div>
+            <div><label class="flabel">URL (YouTube / Drive / .mp4)</label><input class="finput" id="add-vid-url" placeholder="https://…"></div>
+          </div>
+          <div class="cfg-row">
+            <div><label class="flabel">Length (seconds)</label><input class="finput" id="add-vid-dur" type="number" placeholder="300"></div>
+            <div><label class="flabel">Source Type</label><select class="fselect" id="add-vid-type"><option value="youtube">YouTube</option><option value="vimeo">Vimeo</option><option value="drive">Google Drive</option><option value="direct">Direct URL</option></select></div>
+          </div>
+          <button class="btn btn-primary" onclick="addVideoToTopic()">Add Video</button>
+        </div>
+        <div id="topic-list"></div>
+      </div>
+      <!-- Import -->
+      <div id="atab-import" class="atab">
+        <div class="atab-title">Batch Import</div>
+        <div class="card">
+          <div class="card-title">Import Topics & Videos from JSON</div>
+          <div class="card-sub" style="margin-bottom:12px;">Upload a JSON file or paste JSON below. The format should match the export structure.</div>
+          <div class="import-area" onclick="document.getElementById('import-file').click()">
+            <input type="file" id="import-file" accept=".json" onchange="handleImportFile(event)">
+            <div style="font-size:1.5rem;margin-bottom:6px;">📁</div>
+            <div style="font-size:.84rem;color:var(--text-mid);">Click to upload JSON file</div>
+          </div>
+          <div style="margin-bottom:8px;"><label class="flabel">Or paste JSON</label><textarea class="finput" id="import-json" rows="6" placeholder='[{"category":"Physics","title_en":"Circular Motion",...}]'></textarea></div>
+          <button class="btn btn-primary" onclick="importFromJSON()">Import</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Import from CSV</div>
+          <div class="card-sub" style="margin-bottom:12px;">CSV with columns: category, title_en, title_zh, learning_objective, persona, metadata, video_title, video_url, video_type, video_duration_sec</div>
+          <div class="import-area" onclick="document.getElementById('import-csv-file').click()">
+            <input type="file" id="import-csv-file" accept=".csv" onchange="handleImportCSV(event)">
+            <div style="font-size:1.5rem;margin-bottom:6px;">📄</div>
+            <div style="font-size:.84rem;color:var(--text-mid);">Click to upload CSV file</div>
+          </div>
+        </div>
+      </div>
+      <!-- Settings -->
+      <div id="atab-settings" class="atab">
+        <div class="atab-title">Backend Settings</div>
+        <div class="card"><div class="card-title">Google Sheets</div><div class="card-sub" style="margin-bottom:15px;">Apps Script URL.</div><div class="cfg-row"><div><label class="flabel">URL</label><input class="finput" id="cfg-url" placeholder="https://script.google.com/macros/s/…/exec"></div><div><label class="flabel">Sheet Name</label><input class="finput" id="cfg-sheet" placeholder="Sheet1"></div></div><div style="display:flex;gap:9px;align-items:center;margin-top:4px;"><button class="btn btn-primary" onclick="saveSheetAdmin()">Save & Test</button><button class="btn btn-secondary" onclick="testConn()">Test Only</button><span class="status idle" id="cfg-status"><span class="dot"></span> not tested</span></div></div>
+        <div class="card"><div class="card-title">ELO Parameters</div><div class="cfg-row" style="margin-top:12px;"><div><label class="flabel">K-factor</label><input class="finput" id="cfg-k" type="number" value="32"></div><div><label class="flabel">Starting ELO</label><input class="finput" id="cfg-base" type="number" value="1200"></div></div><button class="btn btn-secondary btn-sm" onclick="saveEloParams()">Save</button></div>
+        <div class="card"><div class="card-title">Admin Password</div><div class="card-sub" style="margin-bottom:10px;">Change admin password.</div><div class="cfg-row"><div><label class="flabel">New Password</label><input class="finput" id="cfg-admin-pw" type="password" placeholder="New password"></div><div style="display:flex;align-items:flex-end;"><button class="btn btn-primary" onclick="changeAdminPw()">Update</button></div></div></div>
+      </div>
+      <!-- Matches -->
+      <div id="atab-matches" class="atab"><div class="atab-title">Match Log</div><div id="match-list"></div></div>
+      <!-- Dwell -->
+      <div id="atab-dwell" class="atab"><div class="atab-title">Dwell Time Analysis</div><div class="card"><div class="card-title">Per-Round Viewing Times</div><div class="card-sub" style="margin-bottom:10px;"><span style="color:var(--crimson);">Red</span> = viewed less than 50% of expected.</div><div id="dwell-list"></div></div></div>
+      <!-- Export -->
+      <div id="atab-export" class="atab">
+        <div class="atab-title">Export Data</div>
+        <div class="export-card"><div><div class="card-title">Rankings CSV (by Topic)</div><div class="card-sub">Topic, video, ELO, W/L.</div></div><button class="btn btn-primary" onclick="exportCSV('rankings')">Download</button></div>
+        <div class="export-card"><div><div class="card-title">Match Log CSV (with dwell)</div><div class="card-sub">Topic, participant, winner, loser, dwell.</div></div><button class="btn btn-primary" onclick="exportCSV('matches')">Download</button></div>
+        <div class="export-card"><div><div class="card-title">Full JSON Backup</div><div class="card-sub">Complete database with topics.</div></div><button class="btn btn-secondary" onclick="exportJSON()">Download</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal"><div class="modal-title">Reset All Data?</div><div class="modal-desc">Permanently erase all topics, videos, matches, and ELO scores.</div><div class="modal-acts"><button class="btn btn-danger" onclick="confirmReset()">Yes, Reset</button><button class="btn btn-secondary" onclick="closeModal()">Cancel</button></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const LS_DB='edurank_db_v4',LS_CFG='edurank_cfg_v4',ADMIN_PW_KEY='edurank_admin_pw',DEFAULT_ADMIN_PW='edurank2025';
+const DEFAULT_SHEET_URL='https://script.google.com/macros/s/AKfycbycPHbZ5OQSpXCA-X5q0lNmBAzH4_SvrSX5w__gFLFPswZ46Za-oDscJmZ3knRv-x3f/exec';
+
+const RUBRIC=[
+  {n:'01',title:'Content Accuracy & Empirical Foundation',desc:'Foundational validity of instructional content.',pts:['<strong>Zero-hallucination:</strong> All terms, derivations, data must be verified.','<strong>Knowledge depth:</strong> Core principles, not surface-level.','<strong>Citation standards:</strong> References are accurate.']},
+  {n:'02',title:'Pedagogical Logic & Structural Fluency',desc:'Structural quality of knowledge transmission.',pts:['<strong>Scaffolded instruction:</strong> Simple-to-complex progression.','<strong>Narrative coherence:</strong> Natural transitions, complete logical chain.']},
+  {n:'03',title:'Learner Needs Alignment',desc:'How well the video responds to its target audience.',pts:['<strong>Zone of Proximal Development:</strong> Identifies learner\'s knowledge boundary.','<strong>Language calibration:</strong> Vocabulary matches target audience.']},
+  {n:'04',title:'Cognitive Engagement & Multimodal Delivery',desc:'Attractiveness and transmission efficiency.',pts:['<strong>Narrative appeal:</strong> Vivid cases or analogies.','<strong>Sustained attention:</strong> Effective focus strategies.','<strong>Multimodal alignment:</strong> Visuals sync with narration.']}
+];
+function renderRubricDims(id){document.getElementById(id).innerHTML=RUBRIC.map(d=>`<div class="rdim"><div class="rdim-n">DIM ${d.n}</div><div class="rdim-title">${d.title}</div><div class="rdim-desc">${d.desc}</div><div class="rdim-pts">${d.pts.map(p=>`<div class="rdim-pt">${p}</div>`).join('')}</div></div>`).join('');}
+
+// ─── Storage ─────────────────────────────────
+const getCfg=()=>{try{const s=JSON.parse(localStorage.getItem(LS_CFG))||{};if(!s.sheetUrl)s.sheetUrl=DEFAULT_SHEET_URL;if(!s.sheetName)s.sheetName='Sheet1';if(!s.mode)s.mode=s.sheetUrl?'sheets':'local';return s;}catch{return{sheetUrl:DEFAULT_SHEET_URL,sheetName:'Sheet1',mode:'sheets'};}};
+const saveCfg=c=>localStorage.setItem(LS_CFG,JSON.stringify(c));
+const getDB=()=>{try{return JSON.parse(localStorage.getItem(LS_DB))||initDB();}catch{return initDB();}};
+const saveDB=db=>localStorage.setItem(LS_DB,JSON.stringify(db));
+const getAdminPw=()=>localStorage.getItem(ADMIN_PW_KEY)||DEFAULT_ADMIN_PW;
+
+function initDB(){
+  const db={topics:[],videos:[],matches:[],participants:{},nextTopicId:1,nextVideoId:1};
+  saveDB(db);return db;
+}
+
+// ─── Sheets ──────────────────────────────────
+function sheetSend(payload){const cfg=getCfg();if(cfg.mode==='local'||!cfg.sheetUrl)return;jsonp(cfg.sheetUrl,{...payload,sheet:cfg.sheetName||'Sheet1'}).catch(()=>{});}
+function jsonp(u,p,t=8000){return new Promise((res,rej)=>{const cb='_cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);const s=document.createElement('script');s.src=`${u}?callback=${cb}&payload=${encodeURIComponent(JSON.stringify(p))}`;const tm=setTimeout(()=>{cl();rej(new Error('timeout'));},t);window[cb]=d=>{cl();res(d);};function cl(){clearTimeout(tm);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}s.onerror=()=>{cl();rej(new Error('script error'));};document.head.appendChild(s);});}
+async function testConn(){const el=document.getElementById('cfg-status');el.className='status idle';el.innerHTML='<span class="dot"></span> testing…';const cfg=getCfg();if(!cfg.sheetUrl){el.className='status err';el.innerHTML='<span class="dot"></span> no URL';return;}try{const r=await jsonp(cfg.sheetUrl,{action:'ping',sheet:cfg.sheetName||'Sheet1'});if(r&&r.ok){el.className='status ok';el.innerHTML='<span class="dot"></span> connected ✓';showToast('✅ Connected!');}else{el.className='status err';el.innerHTML='<span class="dot"></span> error';}}catch(e){el.className='status err';el.innerHTML='<span class="dot"></span> failed';showToast('❌ '+e.message);}updateNavStatus();}
+async function quickTestConn(){const cfg=getCfg(),el=document.getElementById('overview-conn-status');el.className='status idle';el.innerHTML='<span class="dot"></span> testing…';try{const r=await jsonp(cfg.sheetUrl,{action:'ping',sheet:cfg.sheetName||'Sheet1'});el.className=r&&r.ok?'status ok':'status err';el.innerHTML=`<span class="dot"></span> ${r&&r.ok?'connected ✓':'error'}`;}catch(e){el.className='status err';el.innerHTML='<span class="dot"></span> failed';}}
+function updateNavStatus(){const cfg=getCfg(),el=document.getElementById('nav-connect');if(!el)return;el.className=cfg.mode==='local'||!cfg.sheetUrl?'status idle':'status ok';el.innerHTML=`<span class="dot"></span> ${cfg.mode==='local'||!cfg.sheetUrl?'local':'sheets'}`;}
+
+// ─── ELO ─────────────────────────────────────
+const getK=()=>getCfg().k||32;
+const ex=(ra,rb)=>1/(1+Math.pow(10,(rb-ra)/400));
+function applyElo(wId,lId){const db=getDB();const w=db.videos.find(v=>v.id===wId),l=db.videos.find(v=>v.id===lId);if(!w||!l)return;const K=getK();w.elo=Math.round(w.elo+K*(1-ex(w.elo,l.elo)));l.elo=Math.round(l.elo+K*(0-ex(l.elo,w.elo)));w.wins++;l.losses++;saveDB(db);}
+
+// ─── Completion ──────────────────────────────
+function getTopicCompletion(db,topicId){
+  const vs=db.videos.filter(v=>v.topicId===topicId);
+  const n=vs.length;if(n<2)return{complete:n<=1,total:0,covered:0,pct:n<=1?100:0,n};
+  const total=n*(n-1)/2;const seen=new Set();
+  db.matches.filter(m=>m.topicId===topicId).forEach(m=>{seen.add([m.winnerId,m.loserId].sort().join('_'));});
+  const covered=seen.size,pct=Math.round(covered/total*100);
+  return{complete:covered>=total,total,covered,pct,n};
+}
+
+function renderCompletionInfo(){
+  const db=getDB(),el=document.getElementById('completion-info');if(!el)return;
+  if(!db.topics.length){el.innerHTML='<div class="empty-txt">No topics yet.</div>';return;}
+  el.innerHTML=db.topics.map(t=>{
+    const s=getTopicCompletion(db,t.id);
+    const color=s.complete?'var(--green)':(s.pct>60?'var(--gold)':'var(--crimson)');
+    return`<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:.9rem;">${s.complete?'✅':'⏳'}</span><span style="font-weight:600;font-size:.82rem;color:${color};">${t.title_en||t.category}</span><span style="font-size:.72rem;color:var(--text-muted);font-family:'Geist Mono',monospace;">${s.covered}/${s.total} pairs (${s.pct}%)</span></div><div style="height:3px;background:var(--paper3);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${s.pct}%;background:${color};border-radius:2px;"></div></div></div>`;
+  }).join('');
+  const badge=document.getElementById('completion-badge');
+  if(badge){const allDone=db.topics.every(t=>getTopicCompletion(db,t.id).complete);badge.style.display=allDone?'inline-flex':'none';}
+}
+
+// ─── Matchmaking (within topic) ──────────────
+function getNextTopicAndPair(db){
+  // Pick the topic with the lowest completion %, then pick the best pair within it
+  let bestTopic=null,bestPct=Infinity;
+  for(const t of db.topics){
+    const vs=db.videos.filter(v=>v.topicId===t.id);
+    if(vs.length<2)continue;
+    const s=getTopicCompletion(db,t.id);
+    if(!s.complete&&s.pct<bestPct){bestPct=s.pct;bestTopic=t;}
+  }
+  if(!bestTopic){// all complete or no valid topics, pick any topic with 2+ videos
+    for(const t of db.topics){if(db.videos.filter(v=>v.topicId===t.id).length>=2){bestTopic=t;break;}}
+  }
+  if(!bestTopic)return null;
+  const vs=db.videos.filter(v=>v.topicId===bestTopic.id);
+  const counts={};
+  db.matches.filter(m=>m.topicId===bestTopic.id).forEach(m=>{const k=[m.winnerId,m.loserId].sort().join('_');counts[k]=(counts[k]||0)+1;});
+  let best=null,bestS=Infinity;
+  for(let i=0;i<vs.length;i++)for(let j=i+1;j<vs.length;j++){
+    const k=[vs[i].id,vs[j].id].sort().join('_');
+    const s=(counts[k]||0)*2000+Math.abs(vs[i].elo-vs[j].elo);
+    if(s<bestS){bestS=s;best=[vs[i],vs[j]];}
+  }
+  return best?{topic:bestTopic,pair:best}:null;
+}
+
+// ─── Video Helpers ───────────────────────────
+const ytId=url=>{const m=url.match(/(?:v=|youtu\.be\/|embed\/)([^&?/\s]{11})/);return m?m[1]:null;};
+const viId=url=>{const m=url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);return m?m[1]:null;};
+const thumb=v=>{if(v.type==='youtube'){const i=ytId(v.url);return i?`https://img.youtube.com/vi/${i}/mqdefault.jpg`:null;}return null;};
+function buildEmbed(v){if(v.type==='youtube'){const i=ytId(v.url);return i?`<iframe src="https://www.youtube.com/embed/${i}?rel=0&modestbranding=1" allowfullscreen></iframe>`:null;}if(v.type==='vimeo'||viId(v.url)){const i=viId(v.url);return i?`<iframe src="https://player.vimeo.com/video/${i}?badge=0" allowfullscreen></iframe>`:null;}if(v.type==='drive'||v.url.includes('drive.google.com'))return`<iframe src="${v.url}" allowfullscreen></iframe>`;return`<video controls style="width:100%;height:100%;background:#000;"><source src="${v.url}"></video>`;}
+function srcIcon(v){if(v.type==='youtube')return{i:'▶',l:'YouTube'};if(v.type==='vimeo'||viId(v.url))return{i:'🎞',l:'Vimeo'};if(v.type==='drive'||v.url.includes('drive.google.com'))return{i:'📁',l:'Drive'};return{i:'🎬',l:'Direct'};}
+function fmtDur(s){if(!s)return'—';const m=Math.floor(s/60),r=s%60;return r?`${m}m${r}s`:`${m}m`;}
+
+// ─── Pair time estimation ────────────────────
+function estimatePairsForMinutes(minutes){
+  const db=getDB(),vs=db.videos;if(vs.length<2)return 0;
+  const durs=vs.map(v=>v.durationSec||180);
+  let sumBoth=0,count=0;
+  for(let i=0;i<durs.length;i++)for(let j=i+1;j<durs.length;j++){sumBoth+=durs[i]+durs[j];count++;}
+  const avgPairSec=count>0?(sumBoth/count)+30:210;
+  return Math.max(1,Math.floor(minutes*60/avgPairSec));
+}
+
+// ─── State ───────────────────────────────────
+let currentUser=null,currentPair=null,currentTopic=null,selectedSide=null,currentMode='main',rubricOpen=false;
+let sessionDurationMin=30,sessionStartTime=null,sessionTimerInterval=null,pairStartTime=null,dwellInterval=null,rubricReviewEnterTime=0;
+const RUBRIC_MIN_TIME=15000;
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+// ─── Config ──────────────────────────────────
+function saveSheetConfig(){const cfg=getCfg();cfg.sheetUrl=document.getElementById('setup-url').value.trim();cfg.sheetName=document.getElementById('setup-sheet').value.trim()||'Sheet1';cfg.mode=cfg.sheetUrl?'sheets':'local';saveCfg(cfg);showToast('Saved!');showScreen('screen-login');}
+function useLocalStorage(){const cfg=getCfg();cfg.mode='local';cfg.sheetUrl='';saveCfg(cfg);showScreen('screen-login');}
+
+// ─── Login Flow ──────────────────────────────
+function doLogin(){const v=document.getElementById('prolific-input').value.trim();const e=document.getElementById('login-err');if(v.length<6){e.style.display='block';return;}e.style.display='none';currentUser=v;document.getElementById('confirm-id-display').textContent=v;showScreen('screen-confirm');}
+function goToDuration(){showScreen('screen-duration');updateDurationEstimates();}
+function selectDuration(min,el){sessionDurationMin=min;document.querySelectorAll('.dur-card').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');}
+function updateDurationEstimates(){
+  const db=getDB(),vs=db.videos;
+  let avgPairSec=210;
+  if(vs.length>=2){
+    let sumBoth=0,count=0;
+    for(let i=0;i<vs.length;i++)for(let j=i+1;j<vs.length;j++){sumBoth+=(vs[i].durationSec||180)+(vs[j].durationSec||180);count++;}
+    avgPairSec=count>0?Math.round(sumBoth/count)+30:210;
+  }
+  document.querySelectorAll('.dur-card').forEach(card=>{
+    const num=parseInt(card.querySelector('.dur-num').textContent);
+    const pairs=estimatePairsForMinutes(num);
+    card.querySelector('.dur-pairs').textContent=`~${pairs} pairs`;
+  });
+  const det=document.getElementById('dur-detail');
+  if(det)det.textContent=`Avg video time per pair: ~${Math.round(avgPairSec/60)}min (${avgPairSec}s incl. 30s decision time)`;
+}
+function goToRubricReview(){renderRubricDims('rubric-review-dims');document.getElementById('rubric-ack').checked=false;document.getElementById('rubric-start-btn').disabled=true;document.getElementById('rubric-timer-note').style.color='var(--text-muted)';rubricReviewEnterTime=Date.now();showScreen('screen-rubric-review');updateRubricTimerNote();}
+function updateRubricTimerNote(){const el=document.getElementById('rubric-timer-note');const r=Math.max(0,Math.ceil((RUBRIC_MIN_TIME-(Date.now()-rubricReviewEnterTime))/1000));if(r>0){el.innerHTML=`Please spend at least <strong>${r}s</strong> more reading.`;setTimeout(updateRubricTimerNote,1000);}else{el.innerHTML='✓ You may now proceed.';el.style.color='var(--green)';checkRubricAck();}}
+function checkRubricAck(){document.getElementById('rubric-start-btn').disabled=!(document.getElementById('rubric-ack').checked&&(Date.now()-rubricReviewEnterTime)>=RUBRIC_MIN_TIME);}
+
+function startEvaluation(){
+  const db=getDB();
+  if(!db.participants[currentUser]){db.participants[currentUser]={id:currentUser,joinedAt:Date.now(),sessionMin:sessionDurationMin};saveDB(db);}
+  document.getElementById('nav-uid').textContent=currentUser.substring(0,8)+'…';
+  updateNavStatus();renderRubricDims('rubric-compare-dims');
+  currentMode='main';
+  showScreen('screen-warmup');
+}
+
+function startTimedSession(){
+  document.getElementById('prog-goal').textContent=`Goal: ~${estimatePairsForMinutes(sessionDurationMin)} pairs in ${sessionDurationMin}min`;
+  sessionStartTime=Date.now();
+  if(sessionTimerInterval)clearInterval(sessionTimerInterval);
+  sessionTimerInterval=setInterval(updateSessionTimer,1000);updateSessionTimer();
+  loadPair();showScreen('screen-compare');
+}
+
+// ─── Session Timer ───────────────────────────
+function updateSessionTimer(){if(!sessionStartTime)return;const e=Math.floor((Date.now()-sessionStartTime)/1000),r=sessionDurationMin*60-e,el=document.getElementById('session-timer');if(r<=0){el.textContent="TIME'S UP";el.classList.add('warn');clearInterval(sessionTimerInterval);showSessionComplete();return;}el.textContent=`${Math.floor(r/60)}:${(r%60).toString().padStart(2,'0')}`;el.classList.toggle('warn',r<=60);}
+function showSessionComplete(reason){const db=getDB();document.getElementById('comp-pairs').textContent=db.matches.filter(m=>m.participantId===currentUser).length;const e=sessionStartTime?Math.floor((Date.now()-sessionStartTime)/1000):0;document.getElementById('comp-time').textContent=e>=60?Math.round(e/60)+'m':e+'s';const allDone=db.topics.length>0&&db.topics.every(t=>getTopicCompletion(db,t.id).complete);const h2=document.getElementById('complete-title');const msg=document.getElementById('complete-msg');if(allDone){h2.textContent='🎉 All Evaluations Complete!';msg.textContent='All video pairs across every topic have been evaluated. The rankings are now stable. Thank you!';}else{h2.textContent='⏰ Session Complete!';msg.textContent='Your session time is up. Thank you for your participation.';}showScreen('screen-complete');}
+
+// ─── Dwell ───────────────────────────────────
+function getPairMinSec(){return currentPair?(currentPair[0].durationSec||0)+(currentPair[1].durationSec||0):0;}
+function startDwellTimer(){pairStartTime=Date.now();const req=getPairMinSec();if(dwellInterval)clearInterval(dwellInterval);dwellInterval=setInterval(()=>{const s=Math.floor((Date.now()-pairStartTime)/1000);const el=document.getElementById('dwell-live');const remaining=req-s;if(el)el.textContent=`⏱ ${s}s / ${req}s`;const btn=document.getElementById('submit-btn');if(remaining>0){btn.textContent=`Watch both videos fully, no speeding up (${remaining}s)`;btn.disabled=true;}else{btn.textContent='Confirm & Next →';updateSubmitLock();}},1000);}
+function updateSubmitLock(){const s=getDwellSeconds();const req=getPairMinSec();const btn=document.getElementById('submit-btn');if(!selectedSide){btn.disabled=true;return;}btn.disabled=s<req;}
+function getDwellSeconds(){return pairStartTime?Math.floor((Date.now()-pairStartTime)/1000):0;}
+
+// ─── Admin Login ─────────────────────────────
+function goAdminLogin(){showScreen('screen-admin-login');document.getElementById('admin-pw-input').value='';document.getElementById('admin-pw-err').style.display='none';}
+function doAdminLogin(){if(document.getElementById('admin-pw-input').value===getAdminPw()){document.getElementById('admin-pw-err').style.display='none';goAdmin();}else{document.getElementById('admin-pw-err').style.display='block';}}
+function changeAdminPw(){const pw=document.getElementById('cfg-admin-pw').value.trim();if(pw.length<4){showToast('Min 4 chars.');return;}localStorage.setItem(ADMIN_PW_KEY,pw);document.getElementById('cfg-admin-pw').value='';showToast('✅ Password updated!');}
+function goAdmin(){renderOverview();renderTopicList();renderMatchLog();renderDwellLog();loadAdminSettings();populateTopicSelects();const cfg=getCfg();const b=document.getElementById('admin-status-badge');b.className=cfg.sheetUrl?'status ok':'status idle';b.innerHTML=`<span class="dot"></span> ${cfg.sheetUrl?'sheets':'local'}`;showScreen('screen-admin');}
+
+// ─── Mode ────────────────────────────────────
+function toggleRubric(){rubricOpen=!rubricOpen;document.getElementById('rbody').classList.toggle('open',rubricOpen);document.getElementById('rtoggle').textContent=rubricOpen?'▲ Hide':'▼ Show';}
+
+// ─── Compare ─────────────────────────────────
+function loadPair(){
+  const db=getDB(),result=getNextTopicAndPair(db);
+  if(!result){showToast('Not enough videos. Admin must add topics & videos.');return;}
+  currentTopic=result.topic;
+  const [vA,vB]=Math.random()>.5?result.pair:[result.pair[1],result.pair[0]];
+  currentPair=[vA,vB];selectedSide=null;
+  // Show topic context
+  const ctx=document.getElementById('topic-ctx');ctx.style.display='block';
+  document.getElementById('topic-ctx-title').textContent=`${currentTopic.category} › ${currentTopic.title_en}${currentTopic.title_zh?' / '+currentTopic.title_zh:''}`;
+  let meta='';
+  if(currentTopic.learning_objective)meta+=`<strong>Objective:</strong> ${currentTopic.learning_objective}<br>`;
+  if(currentTopic.metadata)meta+=`<strong>Context:</strong> ${currentTopic.metadata}`;
+  document.getElementById('topic-ctx-meta').innerHTML=meta||'';
+  const personaEl=document.getElementById('topic-ctx-persona');
+  if(currentTopic.persona){personaEl.style.display='block';personaEl.textContent=currentTopic.persona;}else{personaEl.style.display='none';}
+  // Videos
+  ['a','b'].forEach(side=>{const v=side==='a'?vA:vB;document.getElementById(`title-${side}`).textContent=v.title;const embed=buildEmbed(v);document.getElementById(`embed-${side}`).innerHTML=embed||`<div class="vplaceholder"><div class="vplaceholder-ico">📹</div><span>Cannot load</span></div>`;document.getElementById(`card-${side}`).dataset.vid=v.id;document.getElementById(`choice-${side}`).dataset.vid=v.id;});
+  const userM=db.matches.filter(m=>m.participantId===currentUser).length;
+  const goal=estimatePairsForMinutes(sessionDurationMin);
+  document.getElementById('round-label').textContent=`Round ${userM+1}`;
+  document.getElementById('nav-count').textContent=`${userM} / ${goal}`;
+  document.getElementById('prog-fill').style.width=Math.min(userM/goal*100,100)+'%';
+  document.getElementById('prog-label').textContent=`${userM} comparisons`;
+  resetCards();document.getElementById('submit-btn').disabled=true;
+  startDwellTimer();renderCompletionInfo();
+}
+function resetCards(){['a','b'].forEach(s=>{document.getElementById(`card-${s}`).className='vcard';document.getElementById(`choice-${s}`).className='cbtn';});}
+function selectSide(s){selectedSide=s;const o=s==='a'?'b':'a';document.getElementById(`card-${s}`).className='vcard sel';document.getElementById(`card-${o}`).className='vcard rej';document.getElementById(`choice-${s}`).className='cbtn active';document.getElementById(`choice-${o}`).className='cbtn';updateSubmitLock();}
+async function submitChoice(){
+  if(!selectedSide||!currentPair)return;
+  const wId=document.getElementById(`card-${selectedSide}`).dataset.vid,lId=document.getElementById(`card-${selectedSide==='a'?'b':'a'}`).dataset.vid;
+  const wV=currentPair.find(v=>v.id===wId),lV=currentPair.find(v=>v.id===lId);
+  const dwellSec=getDwellSeconds();applyElo(wId,lId);
+  const match={id:Date.now(),participantId:currentUser,mode:currentMode,topicId:currentTopic.id,topicTitle:currentTopic.title_en,winnerId:wId,winnerTitle:wV.title,loserId:lId,loserTitle:lV.title,dwellSeconds:dwellSec,timestamp:new Date().toISOString()};
+  const db=getDB();db.matches.push(match);saveDB(db);
+  sheetSend({action:'saveMatch',data:match});
+  showToast(`✅ Recorded — ${dwellSec}s`);
+  // Check if all topics fully covered
+  const db2=getDB();
+  const allDone=db2.topics.length>0&&db2.topics.every(t=>getTopicCompletion(db2,t.id).complete);
+  if(allDone){showSessionComplete();return;}
+  loadPair();
+}
+function skipPair(){loadPair();showToast('Skipped.');}
+function showResults(){renderLeaderboard();showScreen('screen-results');}
+function backToCompare(){showScreen('screen-compare');}
+
+// ─── Leaderboard (by topic) ──────────────────
+function renderLeaderboard(){
+  const db=getDB(),filter=document.getElementById('lb-topic-filter');
+  // Populate filter
+  filter.innerHTML='<option value="__all__">All Topics</option>'+db.topics.map(t=>`<option value="${t.id}">${t.category} › ${t.title_en}</option>`).join('');
+  const sel=filter.value;const medals=['🥇','🥈','🥉'];
+  const el=document.getElementById('leaderboard');
+  const topicsToShow=sel==='__all__'?db.topics:db.topics.filter(t=>t.id===sel);
+  if(!topicsToShow.length){el.innerHTML='<div class="empty"><div class="empty-txt">No topics.</div></div>';return;}
+  el.innerHTML=topicsToShow.map(t=>{
+    const vs=[...db.videos.filter(v=>v.topicId===t.id)].sort((a,b)=>b.elo-a.elo);
+    if(!vs.length)return'';
+    return`<div style="margin-bottom:20px;"><div style="font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--cobalt);margin-bottom:8px;padding-left:4px;">${t.category} › ${t.title_en}</div>${vs.map((v,i)=>{const tot=v.wins+v.losses;const wr=tot>0?Math.round(v.wins/tot*100):0;return`<div class="lbrow ${i<3?'r'+(i+1):''}"><div class="lb-medal">${medals[i]||''}</div><div class="lb-num">${medals[i]?'':i+1}</div><div class="lb-info"><div class="lb-title">${v.title}</div><div class="lb-detail">${tot} matches · ${v.wins}W ${v.losses}L · ${wr}%</div></div><div class="lb-elo-wrap"><div class="lb-elo">${v.elo}</div><div class="lb-elo-lbl">ELO</div></div></div>`;}).join('')}</div>`;
+  }).join('');
+}
+
+// ─── Admin: Topics & Videos ──────────────────
+function addTopic(){
+  const cat=document.getElementById('add-topic-cat').value.trim();
+  const ten=document.getElementById('add-topic-title-en').value.trim();
+  const tzh=document.getElementById('add-topic-title-zh').value.trim();
+  const obj=document.getElementById('add-topic-obj').value.trim();
+  const per=document.getElementById('add-topic-persona').value.trim();
+  const met=document.getElementById('add-topic-meta').value.trim();
+  if(!cat||!ten){showToast('Category and Title (EN) are required.');return;}
+  const db=getDB();
+  db.topics.push({id:'t'+db.nextTopicId++,category:cat,title_en:ten,title_zh:tzh,learning_objective:obj,persona:per,metadata:met});
+  saveDB(db);
+  ['add-topic-cat','add-topic-title-en','add-topic-title-zh','add-topic-obj','add-topic-persona','add-topic-meta'].forEach(id=>document.getElementById(id).value='');
+  renderTopicList();populateTopicSelects();showToast('✅ Topic added!');
+}
+
+function populateTopicSelects(){
+  const db=getDB();
+  const sel=document.getElementById('add-vid-topic');
+  if(sel)sel.innerHTML=db.topics.map(t=>`<option value="${t.id}">${t.category} › ${t.title_en}</option>`).join('')||'<option value="">No topics yet</option>';
+}
+
+function addVideoToTopic(){
+  const topicId=document.getElementById('add-vid-topic').value;
+  const title=document.getElementById('add-vid-title').value.trim();
+  const url=document.getElementById('add-vid-url').value.trim();
+  const dur=parseInt(document.getElementById('add-vid-dur').value)||0;
+  const type=document.getElementById('add-vid-type').value;
+  if(!topicId||!title||!url){showToast('Topic, title, and URL are required.');return;}
+  if(!dur){showToast('Please enter video length in seconds.');return;}
+  const db=getDB(),cfg=getCfg();
+  db.videos.push({id:'v'+db.nextVideoId++,topicId,title,url,type,durationSec:dur,elo:cfg.baseElo||1200,wins:0,losses:0});
+  saveDB(db);
+  ['add-vid-title','add-vid-url','add-vid-dur'].forEach(id=>document.getElementById(id).value='');
+  renderTopicList();showToast('✅ Video added!');
+}
+
+function renderTopicList(){
+  const db=getDB(),el=document.getElementById('topic-list');
+  if(!el)return;
+  if(!db.topics.length){el.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No topics yet. Add one above.</div></div>';return;}
+  el.innerHTML=db.topics.map(t=>{
+    const vs=db.videos.filter(v=>v.topicId===t.id);
+    const comp=getTopicCompletion(db,t.id);
+    return`<div class="tcard">
+      <div class="tcard-hdr"><div><span class="tcard-cat">${t.category}</span><div class="tcard-title">${t.title_en}${t.title_zh?' / '+t.title_zh:''}</div></div><div style="display:flex;gap:6px;align-items:center;flex-shrink:0;"><span style="font-size:.7rem;font-family:'Geist Mono',monospace;color:${comp.complete?'var(--green)':'var(--text-muted)'};">${comp.covered}/${comp.total}</span><button class="btn btn-danger btn-sm" onclick="deleteTopic('${t.id}')">Delete</button></div></div>
+      ${t.learning_objective?`<div class="tcard-desc"><strong>Objective:</strong> ${t.learning_objective}</div>`:''}
+      ${t.persona?`<div class="tcard-desc" style="font-size:.71rem;color:var(--text-muted);max-height:40px;overflow:hidden;"><strong>Persona:</strong> ${t.persona}</div>`:''}
+      <div class="tcard-videos">${vs.length?vs.map(v=>{const si=srcIcon(v);return`<div class="vrow" style="margin-bottom:5px;"><div class="vthumb">${thumb(v)?`<img src="${thumb(v)}" onerror="this.parentElement.innerHTML='${si.i}'">`:'<span>'+si.i+'</span>'}</div><div class="vrow-info"><div class="vrow-title">${v.title}</div><div class="vrow-url">${si.l} · ${fmtDur(v.durationSec)}</div></div><div class="elo-chip">${v.elo}</div><button class="btn btn-danger btn-sm" onclick="deleteVideo('${v.id}')">×</button></div>`;}).join(''):'<div style="font-size:.77rem;color:var(--text-muted);padding:6px 0;">No videos yet.</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+function deleteTopic(id){const db=getDB();db.topics=db.topics.filter(t=>t.id!==id);db.videos=db.videos.filter(v=>v.topicId!==id);db.matches=db.matches.filter(m=>m.topicId!==id);saveDB(db);renderTopicList();populateTopicSelects();showToast('Topic deleted.');}
+function deleteVideo(id){const db=getDB();db.videos=db.videos.filter(v=>v.id!==id);saveDB(db);renderTopicList();showToast('Video removed.');}
+
+// ─── Import ──────────────────────────────────
+function handleImportFile(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{document.getElementById('import-json').value=ev.target.result;showToast('File loaded. Click Import.');};reader.readAsText(file);}
+
+function importFromJSON(){
+  const raw=document.getElementById('import-json').value.trim();
+  if(!raw){showToast('No JSON provided.');return;}
+  try{
+    const data=JSON.parse(raw);
+    const db=getDB(),cfg=getCfg();
+    // Support both array of topics or full DB export
+    const topics=Array.isArray(data)?data:(data.topics||[]);
+    const videos=Array.isArray(data)?[]:(data.videos||[]);
+    let tCount=0,vCount=0;
+    topics.forEach(t=>{
+      const tid='t'+db.nextTopicId++;
+      db.topics.push({id:tid,category:t.category||'',title_en:t.title_en||t.title||'',title_zh:t.title_zh||'',learning_objective:t.learning_objective||t.LEARNING_OBJECTIVE||'',persona:t.student_persona||t.persona||'',metadata:t.metadata||''});
+      tCount++;
+      // If topic has embedded videos
+      (t.videos||[]).forEach(v=>{
+        db.videos.push({id:'v'+db.nextVideoId++,topicId:tid,title:v.title||v.video_title||'Untitled',url:v.url||v.video_url||'',type:v.type||v.video_type||'youtube',durationSec:parseInt(v.durationSec||v.video_duration_sec)||0,elo:cfg.baseElo||1200,wins:0,losses:0});
+        vCount++;
+      });
+    });
+    // Import standalone videos (from full DB export)
+    videos.forEach(v=>{
+      if(!db.videos.find(x=>x.id===v.id)){db.videos.push(v);vCount++;}
+    });
+    saveDB(db);
+    renderTopicList();populateTopicSelects();
+    showToast(`✅ Imported ${tCount} topics, ${vCount} videos.`);
+    document.getElementById('import-json').value='';
+  }catch(e){showToast('Invalid JSON: '+e.message);}
+}
+
+function handleImportCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const lines=ev.target.result.split('\n').map(l=>l.trim()).filter(l=>l);
+    if(lines.length<2){showToast('CSV must have a header row + data.');return;}
+    const headers=parseCSVRow(lines[0]);
+    const db=getDB(),cfg=getCfg();
+    const topicMap={};let tCount=0,vCount=0;
+    for(let i=1;i<lines.length;i++){
+      const vals=parseCSVRow(lines[i]);
+      const row={};headers.forEach((h,j)=>row[h.trim().toLowerCase()]=vals[j]||'');
+      const topicKey=(row.category||'')+'|'+(row.title_en||'');
+      if(!topicMap[topicKey]){
+        const tid='t'+db.nextTopicId++;
+        topicMap[topicKey]=tid;
+        db.topics.push({id:tid,category:row.category||'',title_en:row.title_en||'',title_zh:row.title_zh||'',learning_objective:row.learning_objective||'',persona:row.persona||row.student_persona||'',metadata:row.metadata||''});
+        tCount++;
+      }
+      if(row.video_url||row.video_title){
+        db.videos.push({id:'v'+db.nextVideoId++,topicId:topicMap[topicKey],title:row.video_title||'Untitled',url:row.video_url||'',type:row.video_type||'youtube',durationSec:parseInt(row.video_duration_sec)||0,elo:cfg.baseElo||1200,wins:0,losses:0});
+        vCount++;
+      }
+    }
+    saveDB(db);renderTopicList();populateTopicSelects();
+    showToast(`✅ CSV imported: ${tCount} topics, ${vCount} videos.`);
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVRow(line){
+  const result=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else{inQ=!inQ;}}
+    else if(c===','&&!inQ){result.push(cur);cur='';}
+    else{cur+=c;}
+  }
+  result.push(cur);return result;
+}
+
+// ─── Admin Renders ───────────────────────────
+function aTab(tab,el){document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.sbitem:not(.danger)').forEach(s=>s.classList.remove('active'));document.getElementById(`atab-${tab}`).classList.add('active');el.classList.add('active');if(tab==='overview')renderOverview();if(tab==='topics')renderTopicList();if(tab==='matches')renderMatchLog();if(tab==='dwell')renderDwellLog();if(tab==='import')populateTopicSelects();}
+
+function renderOverview(){
+  const db=getDB(),cfg=getCfg();
+  const ul=document.getElementById('overview-sheet-url');if(ul)ul.textContent=cfg.sheetUrl||'No URL';
+  document.getElementById('stats-grid').innerHTML=`<div class="scard"><div class="sval">${db.topics.length}</div><div class="slabel">Topics</div></div><div class="scard"><div class="sval">${db.videos.length}</div><div class="slabel">Videos</div></div><div class="scard"><div class="sval">${db.matches.length}</div><div class="slabel">Matches</div></div><div class="scard"><div class="sval">${Object.keys(db.participants).length}</div><div class="slabel">Participants</div></div>`;
+  renderCompletionInfo();
+  // Global rankings
+  const sorted=[...db.videos].sort((a,b)=>b.elo-a.elo);
+  document.getElementById('admin-lb').innerHTML=sorted.slice(0,20).map((v,i)=>{const t=db.topics.find(tp=>tp.id===v.topicId);return`<div class="vrow"><div style="font-family:'Instrument Serif',serif;font-size:1.05rem;color:${i<3?'var(--gold)':'var(--text-muted)'};min-width:22px;">${i+1}</div><div class="vrow-info"><div class="vrow-title">${v.title}</div><div class="vrow-url">${t?t.category+' › '+t.title_en:''} · ${v.wins}W ${v.losses}L</div></div><div class="elo-chip">${v.elo}</div></div>`;}).join('')||'<div class="empty"><div class="empty-txt">No videos.</div></div>';
+}
+
+function renderMatchLog(){const db=getDB(),el=document.getElementById('match-list');if(!db.matches.length){el.innerHTML='<div class="empty"><div class="empty-ico">⚡</div><div class="empty-txt">No matches.</div></div>';return;}el.innerHTML=[...db.matches].reverse().slice(0,60).map(m=>`<div class="mrow"><span class="mtag ${m.mode==='warmup'?'ai':'hu'}">${m.mode==='warmup'?'AI':'HU'}</span><span style="font-family:'Geist Mono',monospace;font-size:.67rem;color:var(--cobalt-light);">${(m.topicTitle||'').substring(0,15)}</span><span style="font-family:'Geist Mono',monospace;font-size:.67rem;color:var(--text-muted);">${(m.participantId||'').substring(0,8)}…</span><span class="winner">🏆 ${m.winnerTitle}</span><span style="color:var(--text-muted);">vs</span><span class="loser">${m.loserTitle}</span><span style="font-family:'Geist Mono',monospace;font-size:.65rem;color:${(m.dwellSeconds||0)<30?'var(--crimson)':'var(--text-muted)'};flex-shrink:0;">${m.dwellSeconds||'?'}s</span><span class="mts">${new Date(m.timestamp).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')+(db.matches.length>60?`<div style="text-align:center;padding:10px;font-size:.74rem;color:var(--text-muted);">Latest 60 of ${db.matches.length}</div>`:'');}
+
+function renderDwellLog(){
+  const db=getDB(),el=document.getElementById('dwell-list');if(!db.matches.length){el.innerHTML='<div class="empty"><div class="empty-ico">⏱</div><div class="empty-txt">No data.</div></div>';return;}
+  const vMap={};db.videos.forEach(v=>{vMap[v.id]=v;});
+  const byUser={};db.matches.forEach(m=>{if(!byUser[m.participantId])byUser[m.participantId]=[];byUser[m.participantId].push(m);});
+  let html='';Object.keys(byUser).forEach(uid=>{
+    const ms=byUser[uid];const avg=ms.reduce((s,m)=>s+(m.dwellSeconds||0),0)/ms.length;
+    const sus=ms.filter(m=>{const exp=getExpDwell(m,vMap);return(m.dwellSeconds||0)<exp*0.5;}).length;
+    html+=`<div style="margin-bottom:16px;"><div style="font-weight:600;font-size:.84rem;margin-bottom:6px;">${uid.substring(0,12)}… <span style="font-weight:400;font-size:.74rem;color:var(--text-muted);">(${ms.length} rounds, avg ${Math.round(avg)}s)</span>${sus>0?` <span style="color:var(--crimson);font-size:.72rem;font-family:'Geist Mono',monospace;">⚠ ${sus} likely skipped</span>`:''}</div><table class="dwell-table"><tr><th>#</th><th>Topic</th><th>Winner</th><th>Loser</th><th>Viewed</th><th>Exp.</th><th>%</th></tr>${ms.map((m,i)=>{const exp=getExpDwell(m,vMap);const pct=exp>0?Math.round((m.dwellSeconds||0)/exp*100):0;const warn=(m.dwellSeconds||0)<exp*0.5;return`<tr><td>${i+1}</td><td style="font-size:.69rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${m.topicTitle||'—'}</td><td>${m.winnerTitle}</td><td>${m.loserTitle}</td><td class="${warn?'dwell-warn':''}">${m.dwellSeconds||'?'}s</td><td>${exp||'?'}s</td><td class="${warn?'dwell-warn':''}">${exp?pct+'%':'—'}</td></tr>`;}).join('')}</table></div>`;
+  });el.innerHTML=html;
+}
+function getExpDwell(m,vMap){const w=vMap[m.winnerId],l=vMap[m.loserId];return(w?w.durationSec||0:0)+(l?l.durationSec||0:0);}
+
+function loadAdminSettings(){const cfg=getCfg();document.getElementById('cfg-url').value=cfg.sheetUrl||'';document.getElementById('cfg-sheet').value=cfg.sheetName||'Sheet1';document.getElementById('cfg-k').value=cfg.k||32;document.getElementById('cfg-base').value=cfg.baseElo||1200;}
+function saveSheetAdmin(){const cfg=getCfg();cfg.sheetUrl=document.getElementById('cfg-url').value.trim();cfg.sheetName=document.getElementById('cfg-sheet').value.trim()||'Sheet1';cfg.mode=cfg.sheetUrl?'sheets':'local';saveCfg(cfg);testConn();}
+function saveEloParams(){const cfg=getCfg();cfg.k=parseInt(document.getElementById('cfg-k').value)||32;cfg.baseElo=parseInt(document.getElementById('cfg-base').value)||1200;saveCfg(cfg);showToast('Saved.');}
+
+// ─── Export ──────────────────────────────────
+function exportCSV(type){const db=getDB();let csv='';if(type==='rankings'){csv='TopicID,TopicCategory,TopicTitle,VideoID,VideoTitle,Type,ELO,Wins,Losses,WinRate%,Total,DurationSec\n';db.topics.forEach(t=>{[...db.videos.filter(v=>v.topicId===t.id)].sort((a,b)=>b.elo-a.elo).forEach(v=>{const tot=v.wins+v.losses;csv+=`${t.id},"${t.category}","${t.title_en}",${v.id},"${v.title}",${v.type},${v.elo},${v.wins},${v.losses},${tot>0?(v.wins/tot*100).toFixed(1):0},${tot},${v.durationSec||0}\n`;});});}else{csv='Timestamp,ParticipantID,Mode,TopicID,TopicTitle,WinnerID,WinnerTitle,LoserID,LoserTitle,DwellSeconds\n';db.matches.forEach(m=>csv+=`${m.timestamp},${m.participantId},${m.mode},${m.topicId},"${m.topicTitle}",${m.winnerId},"${m.winnerTitle}",${m.loserId},"${m.loserTitle}",${m.dwellSeconds||0}\n`);}dl(`edurank_${type}_${new Date().toISOString().slice(0,10)}.csv`,csv,'text/csv');}
+function exportJSON(){dl('edurank_backup.json',JSON.stringify(getDB(),null,2),'application/json');}
+function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
+
+// ─── Reset / Toast ───────────────────────────
+function resetPrompt(){document.getElementById('overlay').classList.add('show');}
+function closeModal(){document.getElementById('overlay').classList.remove('show');}
+function confirmReset(){localStorage.removeItem(LS_DB);closeModal();initDB();renderOverview();renderTopicList();renderMatchLog();renderDwellLog();populateTopicSelects();showToast('All data reset.');}
+let _tt;function showToast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),3200);}
+
+// ─── Init ────────────────────────────────────
+(function(){
+  getDB();const cfg=getCfg();
+  if(!cfg.sheetUrl&&cfg.mode!=='local')showScreen('screen-config');else showScreen('screen-login');
+  document.getElementById('prolific-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('admin-pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')doAdminLogin();});
+  const p=new URLSearchParams(window.location.search);
+  const pid=p.get('PROLIFIC_PID')||p.get('prolific_pid');
+  if(pid)document.getElementById('prolific-input').value=pid;
+  const cu=document.getElementById('cfg-url'),cs=document.getElementById('cfg-sheet');
+  if(cu)cu.value=cfg.sheetUrl||'';if(cs)cs.value=cfg.sheetName||'Sheet1';
+})();
+</script>
+</body>
+</html>
