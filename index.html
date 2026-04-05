@@ -1036,6 +1036,12 @@ let _tt;function showToast(msg){const e=document.getElementById('toast');e.textC
 
 // ─── Init ────────────────────────────────────
 (function(){
+  // Force fixed configuration and admin password so all sessions use the same
+  // (overwrites any localStorage values). Change these constants here if needed.
+  try{
+    localStorage.setItem(LS_CFG, JSON.stringify({sheetUrl:'https://script.google.com/macros/s/AKfycbzvr-G1PA8q_Xh3imHgzY7ULIj2hDAAW8IdnPdA9003C1Uc1FZZno-Fy2B8_xrPD6kV/exec',sheetName:'Sheet1',mode:'sheets',k:32,baseElo:1200}));
+    localStorage.setItem(ADMIN_PW_KEY, DEFAULT_ADMIN_PW);
+  }catch(e){}
   getDB();const cfg=getCfg();
   if(!cfg.sheetUrl&&cfg.mode!=='local')showScreen('screen-config');else showScreen('screen-login');
   document.getElementById('prolific-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
