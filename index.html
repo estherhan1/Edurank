@@ -414,11 +414,11 @@ textarea.finput{resize:vertical;min-height:60px;font-size:.82rem;line-height:1.5
         <div class="atab-title">System Overview</div>
         <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div><div class="card-title">Google Sheets Connection</div><div class="card-sub" id="overview-sheet-url" style="font-family:'Geist Mono',monospace;font-size:.68rem;word-break:break-all;margin-top:3px;"></div></div>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="status idle" id="overview-conn-status"><span class="dot"></span> not tested</span><button class="btn btn-primary btn-sm" onclick="quickTestConn()">Test</button></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="status idle" id="overview-conn-status"><span class="dot"></span> not tested</span><button class="btn btn-primary btn-sm" onclick="quickTestConn()">Test</button><button class="btn btn-secondary btn-sm" onclick="manualSync()">Sync from Sheet</button></div>
         </div>
         <div class="stats-grid" id="stats-grid"></div>
         <div class="card"><div class="card-title" style="margin-bottom:8px;">📈 Completion by Topic</div><div id="completion-info"></div></div>
-        <div class="card"><div class="card-title" style="margin-bottom:13px;">Global ELO Rankings</div><div id="admin-lb"></div></div>
+        <div class="card"><div class="card-title" style="margin-bottom:13px;">Global ELO Rankings <button class="btn btn-secondary btn-sm" style="margin-left:8px;" onclick="recalcElo()">Recalculate ELO</button></div><div id="admin-lb"></div></div>
       </div>
       <!-- Topics & Videos -->
       <div id="atab-topics" class="atab">
@@ -497,7 +497,7 @@ textarea.finput{resize:vertical;min-height:60px;font-size:.82rem;line-height:1.5
 <div class="toast" id="toast"></div>
 <script>
 const LS_DB='edurank_db_v4',LS_CFG='edurank_cfg_v4',ADMIN_PW_KEY='edurank_admin_pw',DEFAULT_ADMIN_PW='edurank2025';
-const DEFAULT_SHEET_URL='https://script.google.com/macros/s/AKfycbycPHbZ5OQSpXCA-X5q0lNmBAzH4_SvrSX5w__gFLFPswZ46Za-oDscJmZ3knRv-x3f/exec';
+const DEFAULT_SHEET_URL='https://script.google.com/macros/s/AKfycbzvr-G1PA8q_Xh3imHgzY7ULIj2hDAAW8IdnPdA9003C1Uc1FZZno-Fy2B8_xrPD6kV/exec';
 
 const RUBRIC=[
   {n:'01',title:'Content Accuracy & Empirical Foundation',desc:'Foundational validity of instructional content.',pts:['<strong>Zero-hallucination:</strong> All terms, derivations, data must be verified.','<strong>Knowledge depth:</strong> Core principles, not surface-level.','<strong>Citation standards:</strong> References are accurate.']},
@@ -510,142 +510,61 @@ function renderRubricDims(id){document.getElementById(id).innerHTML=RUBRIC.map(d
 // ─── Storage ─────────────────────────────────
 const getCfg=()=>{try{const s=JSON.parse(localStorage.getItem(LS_CFG))||{};if(!s.sheetUrl)s.sheetUrl=DEFAULT_SHEET_URL;if(!s.sheetName)s.sheetName='Sheet1';if(!s.mode)s.mode=s.sheetUrl?'sheets':'local';return s;}catch{return{sheetUrl:DEFAULT_SHEET_URL,sheetName:'Sheet1',mode:'sheets'};}};
 const saveCfg=c=>localStorage.setItem(LS_CFG,JSON.stringify(c));
-const getDB=()=>{try{return JSON.parse(localStorage.getItem(LS_DB))||initDB();}catch{return initDB();}};
+const getDB=()=>{try{const raw=localStorage.getItem(LS_DB);if(!raw)return initDB();const db=JSON.parse(raw);if(!db||!db.topics)return initDB();return db;}catch{return initDB();}};
 const saveDB=db=>localStorage.setItem(LS_DB,JSON.stringify(db));
 const getAdminPw=()=>localStorage.getItem(ADMIN_PW_KEY)||DEFAULT_ADMIN_PW;
 
+// Seed data: only used when DB doesn't exist yet. Never overwrites existing data.
+const SEED_TOPICS=[
+  {id:'t1',category:'Physics',title_en:'Force and Translational Dynamics topic: Circular Motion',title_zh:'圓周運動',learning_objective:"Describe circular orbits using Kepler's third law. essential knowledge: For an object in circular orbit around a central body, the centripetal acceleration is provided solely by gravitational attraction. The period of the orbit is related to the radius and the mass of the central body (Kepler's third law).",persona:'Education Level: Junior high school | Learning Pace: Slow | Preferred Explanation Style: Derivation | Timeline Urgency: Normal | Depth Preference: Application-first',metadata:''}
+];
+const SEED_VIDEOS=[
+  {id:'v1',topicId:'t1',title:'Team 67 Team-67-005',url:'https://teaching.monster/static/materials/c2_t16_m74.mp4',type:'direct',durationSec:205,elo:1200,wins:0,losses:0},
+  {id:'v2',topicId:'t1',title:'黑柴先生 (BlackShiba Labs) BlackShiba',url:'https://teaching.monster/static/materials/c2_t16_m61.mp4',type:'direct',durationSec:363,elo:1200,wins:0,losses:0},
+  {id:'v3',topicId:'t1',title:'宇你童行 tsunumon',url:'https://teaching.monster/static/materials/c2_t16_m32.mp4',type:'direct',durationSec:983,elo:1200,wins:0,losses:0},
+  {id:'v4',topicId:'t1',title:'Kuro Kuro-Teach',url:'https://teaching.monster/static/materials/c2_t16_m56.mp4',type:'direct',durationSec:1069,elo:1200,wins:0,losses:0},
+  {id:'v5',topicId:'t1',title:'Team 67 史密提威威傑格曼傑森',url:'https://teaching.monster/static/materials/c2_t16_m58.mp4',type:'direct',durationSec:305,elo:1200,wins:0,losses:0},
+  {id:'v6',topicId:'t1',title:'Team 26 初號機',url:'https://teaching.monster/static/materials/c2_t16_m54.mp4',type:'direct',durationSec:293,elo:1200,wins:0,losses:0},
+  {id:'v7',topicId:'t1',title:'Xiao Xi 小汐 Teaching Monster v3',url:'https://teaching.monster/static/materials/c2_t16_m75.mp4',type:'direct',durationSec:67,elo:1200,wins:0,losses:0},
+  {id:'v8',topicId:'t1',title:'小金 XiaoJin-v22-LaTeX',url:'https://teaching.monster/static/materials/c2_t16_m21.mp4',type:'direct',durationSec:382,elo:1200,wins:0,losses:0},
+  {id:'v9',topicId:'t1',title:'Team 216 storylens',url:'https://teaching.monster/static/materials/c2_t16_m50.mp4',type:'direct',durationSec:486,elo:1200,wins:0,losses:0},
+  {id:'v10',topicId:'t1',title:'[熱身賽第一輪] 二維向量與運動 Team 24 team24',url:'https://teaching.monster/static/materials/c2_t18_m84.mp4',type:'direct',durationSec:280,elo:1200,wins:0,losses:0}
+];
+
 function initDB(){
-  const db = {
-    "topics": [
-      {
-        "id": "t1",
-        "category": "Physics",
-        "title_en": "Force and Translational Dynamics topic: Circular Motion",
-        "title_zh": "圓周運動",
-        "learning_objective": "Describe circular orbits using Kepler’s third law. essential knowledge: For an object in circular orbit around a central body, the centripetal acceleration is provided solely by gravitational attraction. The period of the orbit is related to the radius and the mass of the central body (Kepler’s third law).",
-        "persona": "Education Level: Junior high school | Learning Pace: Slow | Preferred Explanation Style: Derivation | Timeline Urgency: Normal | Depth Preference: Application-first",
-        "metadata": ""
+  const db={topics:[...SEED_TOPICS],videos:SEED_VIDEOS.map(v=>({...v})),matches:[],participants:{},nextTopicId:2,nextVideoId:11};
+  saveDB(db);return db;
+}
+
+// ─── Sync from Google Sheets on startup ──────
+async function syncFromSheet(){
+  const cfg=getCfg();
+  if(cfg.mode==='local'||!cfg.sheetUrl)return;
+  try{
+    const r=await jsonp(cfg.sheetUrl,{action:'getMatches',sheet:cfg.sheetName||'Sheet1'});
+    if(!r||!r.ok||!r.matches||!r.matches.length)return;
+    const db=getDB();
+    const existingIds=new Set(db.matches.map(m=>String(m.id)));
+    let added=0;
+    r.matches.forEach(m=>{
+      const mid=String(m.id);
+      if(!existingIds.has(mid)){
+        db.matches.push(m);
+        existingIds.add(mid);
+        added++;
+        // Replay ELO for this match
+        const w=db.videos.find(v=>v.id===m.winnerId);
+        const l=db.videos.find(v=>v.id===m.loserId);
+        if(w&&l){
+          const K=getCfg().k||32;
+          w.elo=Math.round(w.elo+K*(1-ex(w.elo,l.elo)));
+          l.elo=Math.round(l.elo+K*(0-ex(l.elo,w.elo)));
+          w.wins++;l.losses++;
+        }
       }
-    ],
-    "videos": [
-      {
-        "id": "v1",
-        "topicId": "t1",
-        "title": "Team 67 Team-67-005",
-        "url": "https://teaching.monster/static/materials/c2_t16_m74.mp4",
-        "type": "direct",
-        "durationSec": 205,
-        "elo": 1185,
-        "wins": 0,
-        "losses": 1
-      },
-      {
-        "id": "v2",
-        "topicId": "t1",
-        "title": "黑柴先生 (BlackShiba Labs) BlackShiba",
-        "url": "https://teaching.monster/static/materials/c2_t16_m61.mp4",
-        "type": "direct",
-        "durationSec": 363,
-        "elo": 1216,
-        "wins": 1,
-        "losses": 0
-      },
-      {
-        "id": "v3",
-        "topicId": "t1",
-        "title": "宇你童行 tsunumon",
-        "url": "https://teaching.monster/static/materials/c2_t16_m32.mp4",
-        "type": "direct",
-        "durationSec": 983,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      },
-      {
-        "id": "v4",
-        "topicId": "t1",
-        "title": "Kuro Kuro-Teach",
-        "url": "https://teaching.monster/static/materials/c2_t16_m56.mp4",
-        "type": "direct",
-        "durationSec": 1069,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      },
-      {
-        "id": "v5",
-        "topicId": "t1",
-        "title": "Team 67 史密提威威傑格曼傑森",
-        "url": "https://teaching.monster/static/materials/c2_t16_m58.mp4",
-        "type": "direct",
-        "durationSec": 305,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      },
-      {
-        "id": "v6",
-        "topicId": "t1",
-        "title": "Team 26 初號機",
-        "url": "https://teaching.monster/static/materials/c2_t16_m54.mp4",
-        "type": "direct",
-        "durationSec": 293,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      },
-      {
-        "id": "v7",
-        "topicId": "t1",
-        "title": "Xiao Xi 小汐 Teaching Monster v3",
-        "url": "https://teaching.monster/static/materials/c2_t16_m75.mp4",
-        "type": "direct",
-        "durationSec": 67,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      },
-      {
-        "id": "v8",
-        "topicId": "t1",
-        "title": "小金 XiaoJin-v22-LaTeX",
-        "url": "https://teaching.monster/static/materials/c2_t16_m21.mp4",
-        "type": "direct",
-        "durationSec": 382,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      },
-      {
-        "id": "v9",
-        "topicId": "t1",
-        "title": "Team 216 storylens",
-        "url": "https://teaching.monster/static/materials/c2_t16_m50.mp4",
-        "type": "direct",
-        "durationSec": 486,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      },
-      {
-        "id": "v10",
-        "topicId": "t1",
-        "title": "[熱身賽第一輪] 二維向量與運動 Team 24 team24",
-        "url": "https://teaching.monster/static/materials/c2_t18_m84.mp4",
-        "type": "direct",
-        "durationSec": 280,
-        "elo": 1200,
-        "wins": 0,
-        "losses": 0
-      }
-    ],
-    "matches": [],
-    "participants": {},
-    "nextTopicId": 2,
-    "nextVideoId": 11
-  };
-  saveDB(db);
-  return db;
+    });
+    if(added>0){saveDB(db);console.log(`[Sync] Merged ${added} matches from sheet.`);}
+  }catch(e){console.warn('[Sync] Failed:',e.message);}
 }
 
 // ─── Sheets ──────────────────────────────────
@@ -1032,17 +951,37 @@ function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectUR
 function resetPrompt(){document.getElementById('overlay').classList.add('show');}
 function closeModal(){document.getElementById('overlay').classList.remove('show');}
 function confirmReset(){localStorage.removeItem(LS_DB);closeModal();initDB();renderOverview();renderTopicList();renderMatchLog();renderDwellLog();populateTopicSelects();showToast('All data reset.');}
+
+function recalcElo(){
+  const db=getDB(),cfg=getCfg();
+  // Reset all ELO to base
+  db.videos.forEach(v=>{v.elo=cfg.baseElo||1200;v.wins=0;v.losses=0;});
+  // Replay all matches in order
+  db.matches.forEach(m=>{
+    const w=db.videos.find(v=>v.id===m.winnerId);
+    const l=db.videos.find(v=>v.id===m.loserId);
+    if(!w||!l)return;
+    const K=cfg.k||32;
+    w.elo=Math.round(w.elo+K*(1-ex(w.elo,l.elo)));
+    l.elo=Math.round(l.elo+K*(0-ex(l.elo,w.elo)));
+    w.wins++;l.losses++;
+  });
+  saveDB(db);renderOverview();renderTopicList();
+  showToast(`✅ ELO recalculated from ${db.matches.length} matches.`);
+}
+
+async function manualSync(){
+  showToast('Syncing from sheet…');
+  await syncFromSheet();
+  renderOverview();renderTopicList();renderMatchLog();
+  showToast('✅ Sync complete.');
+}
 let _tt;function showToast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),3200);}
 
 // ─── Init ────────────────────────────────────
 (function(){
-  // Force fixed configuration and admin password so all sessions use the same
-  // (overwrites any localStorage values). Change these constants here if needed.
-  try{
-    localStorage.setItem(LS_CFG, JSON.stringify({sheetUrl:'https://script.google.com/macros/s/AKfycbzvr-G1PA8q_Xh3imHgzY7ULIj2hDAAW8IdnPdA9003C1Uc1FZZno-Fy2B8_xrPD6kV/exec',sheetName:'Sheet1',mode:'sheets',k:32,baseElo:1200}));
-    localStorage.setItem(ADMIN_PW_KEY, DEFAULT_ADMIN_PW);
-  }catch(e){}
   getDB();const cfg=getCfg();
+  // Show appropriate screen
   if(!cfg.sheetUrl&&cfg.mode!=='local')showScreen('screen-config');else showScreen('screen-login');
   document.getElementById('prolific-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   document.getElementById('admin-pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')doAdminLogin();});
@@ -1051,6 +990,8 @@ let _tt;function showToast(msg){const e=document.getElementById('toast');e.textC
   if(pid)document.getElementById('prolific-input').value=pid;
   const cu=document.getElementById('cfg-url'),cs=document.getElementById('cfg-sheet');
   if(cu)cu.value=cfg.sheetUrl||'';if(cs)cs.value=cfg.sheetName||'Sheet1';
+  // Sync match history from Google Sheets (merges any matches we don't have locally)
+  syncFromSheet();
 })();
 </script>
 </body>
