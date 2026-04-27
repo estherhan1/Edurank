@@ -373,7 +373,7 @@ textarea.finput{resize:vertical;min-height:60px;font-size:.82rem;line-height:1.5
 <!-- ═══ RESULTS ═══ -->
 <div id="screen-results" class="screen" style="background:radial-gradient(ellipse 60% 40% at 50% -5%,rgba(45,106,79,.07) 0%,transparent 55%);">
   <nav><div class="logo">EduRank <span class="logo-sub">· Leaderboard</span></div><div class="pills"><button class="btn btn-secondary btn-sm" onclick="backToCompare()">← Continue</button></div></nav>
-  <div class="results-hdr"><div class="results-ey">RANKINGS BY TOPIC</div><h2 class="results-title">Bradley-Terry Leaderboard</h2><p class="results-sub">Rankings grouped by topic. Each topic's videos are ranked independently.</p></div>
+  <div class="results-hdr"><div class="results-ey">RANKINGS BY TOPIC</div><h2 class="results-title">Elo Leaderboard</h2><p class="results-sub">Rankings grouped by topic. Each topic's videos are ranked independently.</p></div>
   <div style="padding:0 40px 12px;"><label class="flabel">Filter by Topic</label><select class="fselect" id="lb-topic-filter" onchange="renderLeaderboard()" style="max-width:400px;"><option value="__all__">All Topics</option></select></div>
   <div class="lb" id="leaderboard"></div>
   <div class="results-acts"><button class="btn btn-primary" onclick="backToCompare()">Continue</button><button class="btn btn-secondary" onclick="showScreen('screen-login')">Log Out</button></div>
@@ -418,7 +418,7 @@ textarea.finput{resize:vertical;min-height:60px;font-size:.82rem;line-height:1.5
         </div>
         <div class="stats-grid" id="stats-grid"></div>
         <div class="card"><div class="card-title" style="margin-bottom:8px;">📈 Completion by Topic</div><div id="completion-info"></div></div>
-        <div class="card"><div class="card-title" style="margin-bottom:13px;">Global Bradley-Terry Rankings <button class="btn btn-secondary btn-sm" style="margin-left:8px;" onclick="recalcElo()">Recalculate Rankings</button></div><div id="admin-lb"></div></div>
+        <div class="card"><div class="card-title" style="margin-bottom:13px;">Global Elo Rankings <button class="btn btn-secondary btn-sm" style="margin-left:8px;" onclick="recalcElo()">Recalculate Rankings</button></div><div id="admin-lb"></div></div>
       </div>
       <!-- Topics & Videos -->
       <div id="atab-topics" class="atab">
@@ -475,7 +475,7 @@ textarea.finput{resize:vertical;min-height:60px;font-size:.82rem;line-height:1.5
       <div id="atab-settings" class="atab">
         <div class="atab-title">Backend Settings</div>
         <div class="card"><div class="card-title">Google Sheets</div><div class="card-sub" style="margin-bottom:15px;">Apps Script URL.</div><div class="cfg-row"><div><label class="flabel">URL</label><input class="finput" id="cfg-url" placeholder="https://script.google.com/macros/s/…/exec"></div><div><label class="flabel">Sheet Name</label><input class="finput" id="cfg-sheet" placeholder="Sheet1"></div></div><div style="display:flex;gap:9px;align-items:center;margin-top:4px;"><button class="btn btn-primary" onclick="saveSheetAdmin()">Save & Test</button><button class="btn btn-secondary" onclick="testConn()">Test Only</button><span class="status idle" id="cfg-status"><span class="dot"></span> not tested</span></div></div>
-        <div class="card"><div class="card-title">Ranking Parameters</div><div class="cfg-row" style="margin-top:12px;"><div><label class="flabel">Legacy K-factor</label><input class="finput" id="cfg-k" type="number" value="32"></div><div><label class="flabel">Base Score</label><input class="finput" id="cfg-base" type="number" value="1200"></div></div><button class="btn btn-secondary btn-sm" onclick="saveEloParams()">Save</button></div>
+        <div class="card"><div class="card-title">Ranking Parameters</div><div class="cfg-row" style="margin-top:12px;"><div><label class="flabel">K-factor</label><input class="finput" id="cfg-k" type="number" value="32"></div><div><label class="flabel">Base Score</label><input class="finput" id="cfg-base" type="number" value="1500"></div></div><button class="btn btn-secondary btn-sm" onclick="saveEloParams()">Save</button></div>
         <div class="card"><div class="card-title">Admin Password</div><div class="card-sub" style="margin-bottom:10px;">Change admin password.</div><div class="cfg-row"><div><label class="flabel">New Password</label><input class="finput" id="cfg-admin-pw" type="password" placeholder="New password"></div><div style="display:flex;align-items:flex-end;"><button class="btn btn-primary" onclick="changeAdminPw()">Update</button></div></div></div>
       </div>
       <!-- Matches -->
@@ -485,7 +485,7 @@ textarea.finput{resize:vertical;min-height:60px;font-size:.82rem;line-height:1.5
       <!-- Export -->
       <div id="atab-export" class="atab">
         <div class="atab-title">Export Data</div>
-        <div class="export-card"><div><div class="card-title">Rankings CSV (by Topic)</div><div class="card-sub">Topic, video, Bradley-Terry score, W/L.</div></div><button class="btn btn-primary" onclick="exportCSV('rankings')">Download</button></div>
+        <div class="export-card"><div><div class="card-title">Rankings CSV (by Topic)</div><div class="card-sub">Topic, video, Elo score, W/L.</div></div><button class="btn btn-primary" onclick="exportCSV('rankings')">Download</button></div>
         <div class="export-card"><div><div class="card-title">Match Log CSV (with dwell)</div><div class="card-sub">Topic, participant, winner, loser, dwell.</div></div><button class="btn btn-primary" onclick="exportCSV('matches')">Download</button></div>
         <div class="export-card"><div><div class="card-title">Full JSON Backup</div><div class="card-sub">Complete database with topics.</div></div><button class="btn btn-secondary" onclick="exportJSON()">Download</button></div>
       </div>
@@ -515,8 +515,8 @@ const getCfg=()=>{
     if(!s.sheetUrl)s.sheetUrl=DEFAULT_SHEET_URL;
     if(!s.sheetName)s.sheetName='Sheet1';
     if(!s.mode)s.mode=s.sheetUrl?'sheets':'local';
-    if(!s.baseElo)s.baseElo=1200;
-    if(!s.rankingModel)s.rankingModel='bradley-terry';
+    if(!s.baseElo)s.baseElo=1500;
+    if(!s.rankingModel)s.rankingModel='elo';
     if(!s.btScale)s.btScale=200;
     if(!s.adaptiveBatchSize)s.adaptiveBatchSize=8;
     // Minimum comparisons each item should get before leaving bootstrap sparse-graph sampling.
@@ -531,8 +531,8 @@ const getCfg=()=>{
       sheetUrl:DEFAULT_SHEET_URL,
       sheetName:'Sheet1',
       mode:'sheets',
-      baseElo:1200,
-      rankingModel:'bradley-terry',
+      baseElo:1500,
+      rankingModel:'elo',
       btScale:200,
       adaptiveBatchSize:8,
       // Default: give each item at least 2 appearances before fully adaptive mode.
@@ -604,62 +604,44 @@ async function testConn(){const el=document.getElementById('cfg-status');el.clas
 async function quickTestConn(){const cfg=getCfg(),el=document.getElementById('overview-conn-status');el.className='status idle';el.innerHTML='<span class="dot"></span> testing…';try{const r=await jsonp(cfg.sheetUrl,{action:'ping',sheet:cfg.sheetName||'Sheet1'});el.className=r&&r.ok?'status ok':'status err';el.innerHTML=`<span class="dot"></span> ${r&&r.ok?'connected ✓':'error'}`;}catch(e){el.className='status err';el.innerHTML='<span class="dot"></span> failed';}}
 function updateNavStatus(){const cfg=getCfg(),el=document.getElementById('nav-connect');if(!el)return;el.className=cfg.mode==='local'||!cfg.sheetUrl?'status idle':'status ok';el.innerHTML=`<span class="dot"></span> ${cfg.mode==='local'||!cfg.sheetUrl?'local':'sheets'}`;}
 
-// ─── Bradley-Terry Ranking ───────────────────
+// ─── Elo Ranking ─────────────────────────────
 const sigmoid=x=>1/(1+Math.exp(-x));
 const pairKey=(a,b)=>[a,b].sort().join('_');
-const getVideoRankingScore=v=>Number.isFinite(v.btScore)?v.btScore:((v.elo||1200)-(getCfg().baseElo||1200))/Math.max(getCfg().btScale||200,1);
-const getDisplayScore=v=>Number.isFinite(v.btScore)?(getCfg().baseElo||1200)+getVideoRankingScore(v)*(getCfg().btScale||200):(v.elo||getCfg().baseElo||1200);
+const getVideoRankingScore=v=>Number.isFinite(v.elo)?v.elo:(getCfg().baseElo||1500);
+const getDisplayScore=v=>getVideoRankingScore(v);
 
-function fitBradleyTerryScores(videos,matches){
-  const n=videos.length;
-  const zero={};
-  videos.forEach(v=>{zero[v.id]=0;});
-  if(n<2||!matches.length)return zero;
-
-  const idx={};
-  videos.forEach((v,i)=>{idx[v.id]=i;});
-  const wins=Array.from({length:n},()=>Array(n).fill(0));
-  const winTotals=Array(n).fill(0);
-  matches.forEach(m=>{
-    const wi=idx[m.winnerId],li=idx[m.loserId];
-    if(wi===undefined||li===undefined||wi===li)return;
-    wins[wi][li]+=1;
-    winTotals[wi]+=1;
+function sortMatchesChronologically(matches){
+  return [...matches].sort((a,b)=>{
+    const at=Date.parse(a.timestamp||'');
+    const bt=Date.parse(b.timestamp||'');
+    const aValid=Number.isFinite(at);
+    const bValid=Number.isFinite(bt);
+    if(aValid&&bValid&&at!==bt)return at-bt;
+    if(aValid!==bValid)return aValid?-1:1;
+    return (a.id||0)-(b.id||0);
   });
+}
 
-  let theta=Array(n).fill(1);
-  const maxIter=200,eps=1e-9;
-  for(let it=0;it<maxIter;it++){
-    const next=theta.slice();
-    for(let i=0;i<n;i++){
-      let denom=0;
-      for(let j=0;j<n;j++){
-        if(i===j)continue;
-        const nij=wins[i][j]+wins[j][i];
-        if(!nij)continue;
-        denom+=nij/Math.max(theta[i]+theta[j],eps);
-      }
-      if(denom>eps)next[i]=(winTotals[i]+eps)/denom;
-    }
-    const g=Math.exp(next.reduce((s,v)=>s+Math.log(Math.max(v,eps)),0)/n);
-    for(let i=0;i<n;i++)next[i]=Math.max(next[i]/g,eps);
-    let delta=0;
-    for(let i=0;i<n;i++)delta=Math.max(delta,Math.abs(next[i]-theta[i]));
-    theta=next;
-    if(delta<1e-7)break;
-  }
-
+function computeEloScores(videos,matches,base,kFactor){
   const scores={};
-  videos.forEach((v,i)=>{scores[v.id]=Math.log(theta[i]);});
-  const mean=Object.values(scores).reduce((s,x)=>s+x,0)/Math.max(Object.values(scores).length,1);
-  Object.keys(scores).forEach(k=>{scores[k]-=mean;});
+  videos.forEach(v=>{scores[v.id]=base;});
+  sortMatchesChronologically(matches).forEach(m=>{
+    const winnerId=m.winnerId,loserId=m.loserId;
+    if(!Object.prototype.hasOwnProperty.call(scores,winnerId)||!Object.prototype.hasOwnProperty.call(scores,loserId)||winnerId===loserId)return;
+    const winnerPre=scores[winnerId];
+    const loserPre=scores[loserId];
+    const expectedWinner=1/(1+Math.pow(10,(loserPre-winnerPre)/400));
+    const expectedLoser=1-expectedWinner;
+    scores[winnerId]=winnerPre+kFactor*(1-expectedWinner);
+    scores[loserId]=loserPre+kFactor*(0-expectedLoser);
+  });
   return scores;
 }
 
 function recomputeRankingsAndStats(db){
   const cfg=getCfg();
-  const base=cfg.baseElo||1200;
-  const scale=cfg.btScale||200;
+  const base=cfg.baseElo||1500;
+  const kFactor=cfg.k||32;
   db.videos.forEach(v=>{v.wins=0;v.losses=0;v.btScore=0;v.elo=base;});
   db.matches.forEach(m=>{
     const w=db.videos.find(v=>v.id===m.winnerId);
@@ -671,10 +653,10 @@ function recomputeRankingsAndStats(db){
     const vs=db.videos.filter(v=>v.topicId===t.id);
     if(vs.length<1)return;
     const ms=db.matches.filter(m=>m.topicId===t.id);
-    const scores=fitBradleyTerryScores(vs,ms);
+    const scores=computeEloScores(vs,ms,base,kFactor);
     vs.forEach(v=>{
-      v.btScore=Number.isFinite(scores[v.id])?scores[v.id]:0;
-      v.elo=Math.round(base+v.btScore*scale); // keep legacy field populated for backward compatibility.
+      v.elo=Math.round(Number.isFinite(scores[v.id])?scores[v.id]:base);
+      v.btScore=v.elo-base;
     });
   });
 }
@@ -763,7 +745,7 @@ function selectAdaptivePairsForTopic(db,topic,batchSize){
     if(starter.length>=batchSize||starter.length>0)return starter.slice(0,batchSize);
   }
 
-  const scores=fitBradleyTerryScores(videos,matches);
+  const scores=computeEloScores(videos,matches,cfg.baseElo||1500,cfg.k||32);
   const ranking=[...videos].sort((a,b)=>(scores[b.id]||0)-(scores[a.id]||0));
   const rankPos={};
   ranking.forEach((v,i)=>{rankPos[v.id]=i;});
@@ -776,7 +758,7 @@ function selectAdaptivePairsForTopic(db,topic,batchSize){
     const k=pairKey(a.id,b.id);
     const repeats=pairCounts[k]||0;
     if(repeats>=maxPairRepeats)continue;
-    const p=sigmoid((scores[a.id]||0)-(scores[b.id]||0));
+    const p=1/(1+Math.pow(10,((scores[b.id]||0)-(scores[a.id]||0))/400));
     const uncertainty=p*(1-p);
     const coverageBonus=1/((videoCounts[a.id]||0)+(videoCounts[b.id]||0)+1);
     const repetitionPenalty=1/(1+repeats);
@@ -973,7 +955,7 @@ function renderLeaderboard(){
   el.innerHTML=topicsToShow.map(t=>{
     const vs=[...db.videos.filter(v=>v.topicId===t.id)].sort((a,b)=>getVideoRankingScore(b)-getVideoRankingScore(a));
     if(!vs.length)return'';
-    return`<div style="margin-bottom:20px;"><div style="font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--cobalt);margin-bottom:8px;padding-left:4px;">${t.category} › ${t.title_en}</div>${vs.map((v,i)=>{const tot=v.wins+v.losses;const wr=tot>0?Math.round(v.wins/tot*100):0;return`<div class="lbrow ${i<3?'r'+(i+1):''}"><div class="lb-medal">${medals[i]||''}</div><div class="lb-num">${medals[i]?'':i+1}</div><div class="lb-info"><div class="lb-title">${v.title}</div><div class="lb-detail">${tot} matches · ${v.wins}W ${v.losses}L · ${wr}%</div></div><div class="lb-elo-wrap"><div class="lb-elo">${getVideoRankingScore(v).toFixed(3)}</div><div class="lb-elo-lbl">BT</div></div></div>`;}).join('')}</div>`;
+    return`<div style="margin-bottom:20px;"><div style="font-family:'Instrument Serif',serif;font-size:1.1rem;color:var(--cobalt);margin-bottom:8px;padding-left:4px;">${t.category} › ${t.title_en}</div>${vs.map((v,i)=>{const tot=v.wins+v.losses;const wr=tot>0?Math.round(v.wins/tot*100):0;return`<div class="lbrow ${i<3?'r'+(i+1):''}"><div class="lb-medal">${medals[i]||''}</div><div class="lb-num">${medals[i]?'':i+1}</div><div class="lb-info"><div class="lb-title">${v.title}</div><div class="lb-detail">${tot} matches · ${v.wins}W ${v.losses}L · ${wr}%</div></div><div class="lb-elo-wrap"><div class="lb-elo">${Math.round(getVideoRankingScore(v))}</div><div class="lb-elo-lbl">ELO</div></div></div>`;}).join('')}</div>`;
   }).join('');
 }
 
@@ -1008,7 +990,7 @@ function addVideoToTopic(){
   if(!topicId||!title||!url){showToast('Topic, title, and URL are required.');return;}
   if(!dur){showToast('Please enter video length in seconds.');return;}
   const db=getDB(),cfg=getCfg();
-  db.videos.push({id:'v'+db.nextVideoId++,topicId,title,url,type,durationSec:dur,elo:cfg.baseElo||1200,wins:0,losses:0});
+  db.videos.push({id:'v'+db.nextVideoId++,topicId,title,url,type,durationSec:dur,elo:cfg.baseElo||1500,wins:0,losses:0});
   recomputeRankingsAndStats(db);
   saveDB(db);
   ['add-vid-title','add-vid-url','add-vid-dur'].forEach(id=>document.getElementById(id).value='');
@@ -1053,7 +1035,7 @@ function importFromJSON(){
       tCount++;
       // If topic has embedded videos
       (t.videos||[]).forEach(v=>{
-        db.videos.push({id:'v'+db.nextVideoId++,topicId:tid,title:v.title||v.video_title||'Untitled',url:v.url||v.video_url||'',type:v.type||v.video_type||'youtube',durationSec:parseInt(v.durationSec||v.video_duration_sec)||0,elo:cfg.baseElo||1200,wins:0,losses:0});
+        db.videos.push({id:'v'+db.nextVideoId++,topicId:tid,title:v.title||v.video_title||'Untitled',url:v.url||v.video_url||'',type:v.type||v.video_type||'youtube',durationSec:parseInt(v.durationSec||v.video_duration_sec)||0,elo:cfg.baseElo||1500,wins:0,losses:0});
         vCount++;
       });
     });
@@ -1089,7 +1071,7 @@ function handleImportCSV(e){
         tCount++;
       }
       if(row.video_url||row.video_title){
-        db.videos.push({id:'v'+db.nextVideoId++,topicId:topicMap[topicKey],title:row.video_title||'Untitled',url:row.video_url||'',type:row.video_type||'youtube',durationSec:parseInt(row.video_duration_sec)||0,elo:cfg.baseElo||1200,wins:0,losses:0});
+        db.videos.push({id:'v'+db.nextVideoId++,topicId:topicMap[topicKey],title:row.video_title||'Untitled',url:row.video_url||'',type:row.video_type||'youtube',durationSec:parseInt(row.video_duration_sec)||0,elo:cfg.baseElo||1500,wins:0,losses:0});
         vCount++;
       }
     }
@@ -1121,7 +1103,7 @@ function renderOverview(){
   renderCompletionInfo();
   // Global rankings
   const sorted=[...db.videos].sort((a,b)=>getVideoRankingScore(b)-getVideoRankingScore(a));
-  document.getElementById('admin-lb').innerHTML=sorted.slice(0,20).map((v,i)=>{const t=db.topics.find(tp=>tp.id===v.topicId);return`<div class="vrow"><div style="font-family:'Instrument Serif',serif;font-size:1.05rem;color:${i<3?'var(--gold)':'var(--text-muted)'};min-width:22px;">${i+1}</div><div class="vrow-info"><div class="vrow-title">${v.title}</div><div class="vrow-url">${t?t.category+' › '+t.title_en:''} · ${v.wins}W ${v.losses}L</div></div><div class="elo-chip">${getVideoRankingScore(v).toFixed(3)}</div></div>`;}).join('')||'<div class="empty"><div class="empty-txt">No videos.</div></div>';
+  document.getElementById('admin-lb').innerHTML=sorted.slice(0,20).map((v,i)=>{const t=db.topics.find(tp=>tp.id===v.topicId);return`<div class="vrow"><div style="font-family:'Instrument Serif',serif;font-size:1.05rem;color:${i<3?'var(--gold)':'var(--text-muted)'};min-width:22px;">${i+1}</div><div class="vrow-info"><div class="vrow-title">${v.title}</div><div class="vrow-url">${t?t.category+' › '+t.title_en:''} · ${v.wins}W ${v.losses}L</div></div><div class="elo-chip">${Math.round(getVideoRankingScore(v))}</div></div>`;}).join('')||'<div class="empty"><div class="empty-txt">No videos.</div></div>';
 }
 
 function renderMatchLog(){const db=getDB(),el=document.getElementById('match-list');if(!db.matches.length){el.innerHTML='<div class="empty"><div class="empty-ico">⚡</div><div class="empty-txt">No matches.</div></div>';return;}el.innerHTML=[...db.matches].reverse().slice(0,60).map(m=>`<div class="mrow"><span class="mtag ${m.mode==='warmup'?'ai':'hu'}">${m.mode==='warmup'?'AI':'HU'}</span><span style="font-family:'Geist Mono',monospace;font-size:.67rem;color:var(--cobalt-light);">${(m.topicTitle||'').substring(0,15)}</span><span style="font-family:'Geist Mono',monospace;font-size:.67rem;color:var(--text-muted);">${(m.participantId||'').substring(0,8)}…</span><span class="winner">🏆 ${m.winnerTitle}</span><span style="color:var(--text-muted);">vs</span><span class="loser">${m.loserTitle}</span><span style="font-family:'Geist Mono',monospace;font-size:.65rem;color:${(m.dwellSeconds||0)<30?'var(--crimson)':'var(--text-muted)'};flex-shrink:0;">${m.dwellSeconds||'?'}s</span><span class="mts">${new Date(m.timestamp).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')+(db.matches.length>60?`<div style="text-align:center;padding:10px;font-size:.74rem;color:var(--text-muted);">Latest 60 of ${db.matches.length}</div>`:'');}
@@ -1138,12 +1120,12 @@ function renderDwellLog(){
 }
 function getExpDwell(m,vMap){const w=vMap[m.winnerId],l=vMap[m.loserId];return(w?w.durationSec||0:0)+(l?l.durationSec||0:0);}
 
-function loadAdminSettings(){const cfg=getCfg();document.getElementById('cfg-url').value=cfg.sheetUrl||'';document.getElementById('cfg-sheet').value=cfg.sheetName||'Sheet1';document.getElementById('cfg-k').value=cfg.k||32;document.getElementById('cfg-base').value=cfg.baseElo||1200;}
+function loadAdminSettings(){const cfg=getCfg();document.getElementById('cfg-url').value=cfg.sheetUrl||'';document.getElementById('cfg-sheet').value=cfg.sheetName||'Sheet1';document.getElementById('cfg-k').value=cfg.k||32;document.getElementById('cfg-base').value=cfg.baseElo||1500;}
 function saveSheetAdmin(){const cfg=getCfg();cfg.sheetUrl=document.getElementById('cfg-url').value.trim();cfg.sheetName=document.getElementById('cfg-sheet').value.trim()||'Sheet1';cfg.mode=cfg.sheetUrl?'sheets':'local';saveCfg(cfg);testConn();}
-function saveEloParams(){const cfg=getCfg();cfg.k=parseInt(document.getElementById('cfg-k').value)||32;cfg.baseElo=parseInt(document.getElementById('cfg-base').value)||1200;saveCfg(cfg);showToast('Saved.');}
+function saveEloParams(){const cfg=getCfg();cfg.k=parseInt(document.getElementById('cfg-k').value)||32;cfg.baseElo=parseInt(document.getElementById('cfg-base').value)||1500;saveCfg(cfg);showToast('Saved.');}
 
 // ─── Export ──────────────────────────────────
-function exportCSV(type){const db=getDB();let csv='';if(type==='rankings'){csv='TopicID,TopicCategory,TopicTitle,VideoID,VideoTitle,Type,BTScore,DisplayScore,Wins,Losses,WinRate%,Total,DurationSec\n';db.topics.forEach(t=>{[...db.videos.filter(v=>v.topicId===t.id)].sort((a,b)=>getVideoRankingScore(b)-getVideoRankingScore(a)).forEach(v=>{const tot=v.wins+v.losses;csv+=`${t.id},"${t.category}","${t.title_en}",${v.id},"${v.title}",${v.type},${getVideoRankingScore(v).toFixed(6)},${Math.round(getDisplayScore(v))},${v.wins},${v.losses},${tot>0?(v.wins/tot*100).toFixed(1):0},${tot},${v.durationSec||0}\n`;});});}else{csv='Timestamp,ParticipantID,Mode,TopicID,TopicTitle,WinnerID,WinnerTitle,LoserID,LoserTitle,DwellSeconds\n';db.matches.forEach(m=>csv+=`${m.timestamp},${m.participantId},${m.mode},${m.topicId},"${m.topicTitle}",${m.winnerId},"${m.winnerTitle}",${m.loserId},"${m.loserTitle}",${m.dwellSeconds||0}\n`);}dl(`edurank_${type}_${new Date().toISOString().slice(0,10)}.csv`,csv,'text/csv');}
+function exportCSV(type){const db=getDB();let csv='';if(type==='rankings'){csv='TopicID,TopicCategory,TopicTitle,VideoID,VideoTitle,Type,EloScore,Wins,Losses,WinRate%,Total,DurationSec\n';db.topics.forEach(t=>{[...db.videos.filter(v=>v.topicId===t.id)].sort((a,b)=>getVideoRankingScore(b)-getVideoRankingScore(a)).forEach(v=>{const tot=v.wins+v.losses;csv+=`${t.id},"${t.category}","${t.title_en}",${v.id},"${v.title}",${v.type},${Math.round(getVideoRankingScore(v))},${v.wins},${v.losses},${tot>0?(v.wins/tot*100).toFixed(1):0},${tot},${v.durationSec||0}\n`;});});}else{csv='Timestamp,ParticipantID,Mode,TopicID,TopicTitle,WinnerID,WinnerTitle,LoserID,LoserTitle,DwellSeconds\n';db.matches.forEach(m=>csv+=`${m.timestamp},${m.participantId},${m.mode},${m.topicId},"${m.topicTitle}",${m.winnerId},"${m.winnerTitle}",${m.loserId},"${m.loserTitle}",${m.dwellSeconds||0}\n`);}dl(`edurank_${type}_${new Date().toISOString().slice(0,10)}.csv`,csv,'text/csv');}
 function exportJSON(){dl('edurank_backup.json',JSON.stringify(getDB(),null,2),'application/json');}
 function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();}
 
@@ -1156,7 +1138,7 @@ function recalcElo(){
   const db=getDB();
   recomputeRankingsAndStats(db);
   saveDB(db);renderOverview();renderTopicList();
-  showToast(`✅ Bradley-Terry ranking recalculated from ${db.matches.length} matches.`);
+  showToast(`✅ Elo ranking recalculated from ${db.matches.length} matches.`);
 }
 
 async function manualSync(){
